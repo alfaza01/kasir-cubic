@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.aplikasicubic.cubicbaru"
+    namespace "com.aplikasicubic.cubic"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.aplikasicubic.cubicbaru"
@@ -19,16 +19,33 @@ android {
     signingConfigs {
         release {
             // Membaca konfigurasi dari Environment Variables (GitHub Secrets)
-            storeFile file(System.getenv("KEYSTORE_PATH") ?: "release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            def keystorePath = System.getenv("KEYSTORE_PATH") ?: "release.keystore"
+            def keystoreFile = file(keystorePath)
+            def hasSecrets = System.getenv("KEYSTORE_PASSWORD") != null && System.getenv("KEY_ALIAS") != null
+
+            if (keystoreFile.exists() && hasSecrets) {
+                storeFile keystoreFile
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            } else {
+                // Fallback kosong agar tidak crash saat parsing, build akan menggunakan debug config di buildTypes
+                storeFile file(keystorePath)
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            def keystorePath = System.getenv("KEYSTORE_PATH") ?: "release.keystore"
+            def keystoreFile = file(keystorePath)
+            def hasSecrets = System.getenv("KEYSTORE_PASSWORD") != null && System.getenv("KEY_ALIAS") != null
+
+            if (keystoreFile.exists() && hasSecrets) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

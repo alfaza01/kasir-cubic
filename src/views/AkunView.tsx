@@ -32,6 +32,8 @@ interface AkunViewProps {
   onSaveCashierSelf: (username: string, account: { name: string, pin: string }) => Promise<void>
   activeStoreId: string
   transactions: any[]
+  continueSaldo: boolean
+  toggleContinueSaldo: (val: boolean) => void
 }
 
 const AkunView: React.FC<AkunViewProps> = (props) => {
@@ -153,6 +155,66 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                       >
                         SIMPAN TOKO
                       </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* PENGATURAN SALDO HARIAN - OWNER ONLY */}
+          {props.kasirRole === 'owner' && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <button 
+                onClick={() => toggleSection('saldoHarian')}
+                className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shrink-0">
+                    <RefreshCw size={18} />
+                  </div>
+                  <div>
+                    <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">SISTEM SALDO HARIAN</span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Lanjut saldo kemarin atau reset</span>
+                  </div>
+                </div>
+                {openSection === 'saldoHarian' ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+              </button>
+              <AnimatePresence>
+                {openSection === 'saldoHarian' && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-slate-100"
+                  >
+                    <div className="p-5 space-y-4 bg-slate-50">
+                      <div className="flex items-start gap-3">
+                        <button
+                          onClick={() => props.toggleContinueSaldo(!props.continueSaldo)}
+                          className={cn(
+                            "w-12 h-6 rounded-full shrink-0 relative transition-colors duration-300 ease-in-out",
+                            props.continueSaldo ? "bg-emerald-500" : "bg-slate-300"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform duration-300 shadow-sm",
+                              props.continueSaldo ? "translate-x-6.5 left-0" : "translate-x-0.5 left-0"
+                            )}
+                          />
+                        </button>
+                        <div>
+                          <p className="text-xs font-black text-slate-800 mb-1">
+                            {props.continueSaldo ? "LANJUT TRANSAKSI KEMARIN" : "HARI BARU (MURNI KOSONG)"}
+                          </p>
+                          <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+                            {props.continueSaldo 
+                              ? "Semua laporan saldo di dompet akan terus bersambung dan menjumlahkan sisa saldo dari hari-hari sebelumnya." 
+                              : "Setiap hari dianggap buku baru. Saldo harian akan dimulai dari 0 dan hanya menghitung transaksi pada hari yang sama."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}

@@ -9,29 +9,23 @@
       "client_info": {
         "mobilesdk_app_id": "1:655804105233:android:1d91b684c70cec004e27b0",
         "android_client_info": {
-          "package_name": "com.aplikasicubic.cubic"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyA_LnF6IiE4DvfdFnF0ZjiSfq0zWwhoR34"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:655804105233:android:c92f7a4aecd62f314e27b0",
-        "android_client_info": {
           "package_name": "com.aplikasicubic.cubicbaru"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "655804105233-rpl2m049h1j06dpealldsqh7a4mscptk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aplikasicubic.cubicbaru",
+            "certificate_hash": "93f435acf57f5fe4bcedeb1f1354000e928a276f"
+          }
+        },
+        {
+          "client_id": "655804105233-6h2o3smdh88m9m3r72tq4e11oam132n8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA_LnF6IiE4DvfdFnF0ZjiSfq0zWwhoR34"

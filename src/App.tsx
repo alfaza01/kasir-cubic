@@ -870,6 +870,20 @@ const MainApp: React.FC<MainAppProps> = ({
   const [storeName, setStoreName] = useState('APLIKASI CUBIC')
   const [storeSubtext, setStoreSubtext] = useState('Pembukuan Agen brilink & Konter')
   const [storePhoto, setStorePhoto] = useState('')
+  const [continueSaldo, setContinueSaldo] = useState<boolean>(false)
+
+  // Load active store's continueSaldo setting on store change
+  useEffect(() => {
+    const targetId = activeStoreId !== 'all' ? activeStoreId : pantauStoreId;
+    const stored = localStorage.getItem(`alphaPro_${targetId}_continueSaldo`)
+    setContinueSaldo(stored === 'true')
+  }, [activeStoreId, pantauStoreId])
+
+  const toggleContinueSaldo = (value: boolean) => {
+    const targetId = activeStoreId !== 'all' ? activeStoreId : pantauStoreId;
+    localStorage.setItem(`alphaPro_${targetId}_continueSaldo`, String(value))
+    setContinueSaldo(value)
+  }
 
   // Keep pantauStoreId in sync with activeStoreId if cashier
   useEffect(() => {
@@ -1203,6 +1217,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
     const todayISO = getLocalDateString()
     const todayTxs = relevantTxs.filter(t => t.timestamp.startsWith(todayISO))
+    const txsForBalance = continueSaldo ? relevantTxs : todayTxs
     
     let calcSaldoBank = 0
     let calcKasModal = 0
@@ -1214,8 +1229,8 @@ const MainApp: React.FC<MainAppProps> = ({
     const walletBalances: Record<string, number> = {};
     wallets.forEach(w => walletBalances[w] = 0);
 
-    todayTxs.forEach(tx => {
-      // Calculate true accumulated balances for TODAY
+    txsForBalance.forEach(tx => {
+      // Calculate true accumulated balances for TODAY or ALL TIME depending on continueSaldo
       const sumber = resolveWalletId(tx.sumber_dana || '');
       if (sumber && walletBalances[sumber] !== undefined) {
         walletBalances[sumber] -= tx.nominal;
@@ -1280,7 +1295,7 @@ const MainApp: React.FC<MainAppProps> = ({
     setSaldoNonTunaiAccumulated(calcSaldoNonTunai)
     setTotalPenjualan(calcPenjualan)
     setWalletBalances(walletBalances)
-  }, [transactions, account?.role, username, filterKasir, pantauStoreId])
+  }, [transactions, account?.role, username, filterKasir, pantauStoreId, continueSaldo])
 
   // Fetch Aggregated Report for LaporanView
   useEffect(() => {
@@ -2103,6 +2118,8 @@ const MainApp: React.FC<MainAppProps> = ({
                       onSaveCashierSelf={handleSaveCashierSelf}
                       activeStoreId={targetStoreId}
                       transactions={transactions}
+                      continueSaldo={continueSaldo}
+                      toggleContinueSaldo={toggleContinueSaldo}
                     />
                   );
                 case 'view-isi-saldo':
@@ -2403,6 +2420,8 @@ const MainApp: React.FC<MainAppProps> = ({
             onSaveCashierSelf={handleSaveCashierSelf}
             activeStoreId={targetStoreId}
             transactions={transactions}
+            continueSaldo={continueSaldo}
+            toggleContinueSaldo={toggleContinueSaldo}
           />
 
           <IsiSaldoView 
