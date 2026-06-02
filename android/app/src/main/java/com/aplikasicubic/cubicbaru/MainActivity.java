@@ -1,4 +1,4 @@
-package com.aplikasicubic.cubic;
+package com.aplikasicubic.cubicbaru;
 
 import com.getcapacitor.BridgeActivity;
 
