@@ -1,0 +1,6 @@
+{
+  "name": "Aplikasi Cubic",
+  "description": "Sistem manajemen toko dan kasir modern berbasis React, Vite, dan Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
