@@ -91,7 +91,7 @@
 
 /* Simulated screen device wrapper states on high-resolution screens */
 @media (min-width: 1024px) {
-  .app-container.hp {
+  .app-container.mobile {
     max-width: 412px;
     height: 860px;
     min-height: 860px;
@@ -118,7 +118,7 @@
   }
 
   /* Anchor fixed nested overlays, floating notifications, and navigation bars inside simulated devices */
-  .app-container.hp .fixed:not(.modal-fixed-bypass),
+  .app-container.mobile .fixed:not(.modal-fixed-bypass),
   .app-container.tablet .fixed:not(.modal-fixed-bypass) {
     position: absolute !important;
   }
@@ -214,26 +214,6 @@ html.theme-dark .border-gray-200 {
   border-color: #1b1b24 !important;
 }
 
-/* Saturated text categories */
-html.theme-dark .text-slate-800,
-html.theme-dark .dark\:text-slate-200,
-html.theme-dark .text-slate-900,
-html.theme-dark .dark\:text-slate-100,
-html.theme-dark .text-gray-900,
-html.theme-dark .text-gray-800,
-html.theme-dark .text-black {
-  color: #f3f4f6 !important;
-}
-
-html.theme-dark .text-slate-500,
-html.theme-dark .dark\:text-slate-400,
-html.theme-dark .text-slate-600,
-html.theme-dark .text-gray-600,
-html.theme-dark .text-gray-500,
-html.theme-dark .text-slate-700 {
-  color: #9ca3af !important;
-}
-
 /* ==========================================================================
    OCEAN BLUE THEME OVERRIDES (Harmonized, electric, full-dark blue reskin)
    ========================================================================== */
@@ -302,8 +282,7 @@ html.theme-blue .dark\:text-slate-200,
 html.theme-blue .text-slate-900,
 html.theme-blue .dark\:text-slate-100,
 html.theme-blue .text-gray-900,
-html.theme-blue .text-gray-800,
-html.theme-blue .text-black {
+html.theme-blue .text-gray-800 {
   color: #f1f7ff !important;
 }
 
@@ -311,8 +290,7 @@ html.theme-blue .text-slate-500,
 html.theme-blue .dark\:text-slate-400,
 html.theme-blue .text-slate-600,
 html.theme-blue .text-gray-600,
-html.theme-blue .text-gray-500,
-html.theme-blue .text-slate-700 {
+html.theme-blue .text-gray-500 {
   color: #9abfed !important;
 }
 
@@ -345,13 +323,13 @@ html.theme-blue .border-cyan-400 {
 
 /* Device simulation frame border adjustments during Blue/Dark selections */
 @media (min-width: 1024px) {
-  html.theme-dark .app-container.hp,
+  html.theme-dark .app-container.mobile,
   html.theme-dark .app-container.tablet {
     border-color: #1f2937 !important;
     background-color: #0b0f19 !important;
   }
   
-  html.theme-blue .app-container.hp,
+  html.theme-blue .app-container.mobile,
   html.theme-blue .app-container.tablet {
     border-color: #12244a !important;
     background-color: #040919 !important;

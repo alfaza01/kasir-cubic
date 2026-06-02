@@ -1,8 +1,0 @@
-src/views/BerandaView.tsx:2214:                        <h4 className="text-[14px] font-black text-gray-900 uppercase tracking-tighter">Performa Transaksi</h4>
-src/views/BerandaView.tsx:2444:                            className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
-src/views/BerandaView.tsx:2459:                            className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
-src/views/BerandaView.tsx:2478:                          className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 text-xs font-black text-gray-900 outline-none"
-src/views/BerandaView.tsx:2579:                      <option value="Semua" className="text-gray-900">Semua</option>
-src/views/BerandaView.tsx:2581:                        <option key={id} value={id} className="text-gray-900">{acc.name}</option>
-src/App.tsx:2615:              <h3 className="font-black text-[11px] uppercase tracking-widest text-gray-900 mb-1.5">{confirmDialog.title}</h3>
-src/index.css:284:html.theme-blue .text-gray-900,
