@@ -1228,7 +1228,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
   }
 
   return (
-    <div id="laporan-content" className={cn("page-view hide-scrollbar bg-gray-50/50", !props.active && "hidden")}>
+    <div id="laporan-content" className={cn("page-view hide-scrollbar bg-gray-50/50", !props.active && "hidden", props.isPc && "flex-1 h-full w-full overflow-y-auto")}>
       {/* HEADER TOKO IDENTIK BERANDA */}
       <div id="laporan-header-actions" className="relative bg-gradient-to-br from-blue-700 to-blue-800 rounded-b-[2rem] shadow-md" style={{ paddingBottom: '2.5rem' }}>
         <div className="px-4 pt-12 pb-2 flex items-center justify-between gap-3">

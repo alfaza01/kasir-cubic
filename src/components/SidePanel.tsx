@@ -156,9 +156,9 @@ const SidePanel: React.FC<SidePanelProps> = ({
                 
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'light', label: 'Klasik Light', colorClass: 'bg-white border-white', icon: Contrast },
-                    { id: 'blue', label: 'Ocean Blue', colorClass: 'bg-blue-600 border-blue-500', icon: Contrast },
-                    { id: 'neon', label: 'Cyber Neon', colorClass: 'bg-indigo-950 border-indigo-500 text-purple-400', icon: Contrast }
+                    { id: 'light', label: 'Classic Putih', colorClass: 'bg-white border-slate-300', icon: Contrast },
+                    { id: 'dark', label: 'Gelap Charcoal', colorClass: 'bg-slate-800 border-slate-600', icon: Contrast },
+                    { id: 'blue', label: 'Biru Ocean', colorClass: 'bg-blue-900 border-cyan-400', icon: Contrast }
                   ].map((themeOpt) => {
                     const isActive = theme === themeOpt.id
                     return (

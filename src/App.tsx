@@ -541,8 +541,11 @@ const MainApp: React.FC<MainAppProps> = ({
   // Apply theme class to <html> element and persist to localStorage
   useEffect(() => {
     const root = document.documentElement
-    root.classList.remove('theme-light', 'theme-blue', 'theme-neon')
+    root.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-neon', 'dark')
     root.classList.add(`theme-${theme}`)
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    }
     localStorage.setItem('theme', theme)
   }, [theme])
 

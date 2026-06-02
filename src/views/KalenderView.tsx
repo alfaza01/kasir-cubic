@@ -123,7 +123,7 @@ export const KalenderView: React.FC<KalenderViewProps> = (props) => {
   const selectedNotes = notes.filter(n => n.dateString === selectedDateStr)
 
   return (
-    <div className={cn(`flex-1 flex flex-col h-screen overflow-hidden bg-slate-950 font-sans text-white ${props.isPc ? 'p-6' : 'p-4'}`, !props.active && 'hidden')}>
+    <div className={cn(`flex-1 flex flex-col h-full overflow-hidden bg-slate-950 font-sans text-white ${props.isPc ? 'p-6' : 'p-4'}`, !props.active && 'hidden')}>
       {/* Top Bar */}
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80 shrink-0">
         <button

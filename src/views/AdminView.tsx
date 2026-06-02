@@ -51,7 +51,7 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
   }
 
   return (
-    <div className={cn(`flex-1 flex flex-col h-screen overflow-hidden bg-slate-950 font-sans text-white ${isPc ? 'p-6' : 'p-4'}`, !active && "hidden")}>
+    <div className={cn(`flex-1 flex flex-col h-full overflow-hidden bg-slate-950 font-sans text-white ${isPc ? 'p-6' : 'p-4'}`, !active && "hidden")}>
       {/* Top Bar */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-3">

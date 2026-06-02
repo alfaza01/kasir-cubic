@@ -18,6 +18,7 @@ interface VoucherViewProps {
   activeStoreId: string
   kasirRole: string
   kasirName?: string
+  googleUid?: string
 }
 
 interface VoucherItem {

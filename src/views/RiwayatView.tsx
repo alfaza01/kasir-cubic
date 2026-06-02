@@ -794,7 +794,7 @@ const RiwayatView: React.FC<RiwayatViewProps> = (props) => {
   }
 
   return (
-    <div className={cn("page-view hide-scrollbar", !props.active && "hidden")} style={{ backgroundColor: 'var(--container-bg, #ffffff)' }}>
+    <div className={cn("page-view hide-scrollbar", !props.active && "hidden", props.isPc && "flex-1 h-full w-full overflow-y-auto")} style={{ backgroundColor: 'var(--container-bg, #ffffff)' }}>
       {/* HEADER TOKO IDENTIK BERANDA */}
       <div className="relative bg-gradient-to-br from-blue-700 to-blue-800 rounded-b-[2rem] shadow-md" style={{ paddingBottom: '2.5rem' }}>
         <div className="px-4 pt-12 pb-2 flex items-center justify-between gap-3">

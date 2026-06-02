@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:655804105233:android:1d91b684c70cec004e27b0",
         "android_client_info": {
-          "package_name": "com.aplikasicubic.cubic"
+          "package_name": "com.aplikasicubic.cubicbaru"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "655804105233-rpl2m049h1j06dpealldsqh7a4mscptk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.aplikasicubic.cubic",
+            "package_name": "com.aplikasicubic.cubicbaru",
             "certificate_hash": "93f435acf57f5fe4bcedeb1f1354000e928a276f"
           }
         },

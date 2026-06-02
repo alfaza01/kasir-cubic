@@ -1,0 +1,8 @@
+{
+  "appId": "com.aplikasicubic.cubicbaru",
+  "appName": "Aplikasi Cubic",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
