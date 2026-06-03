@@ -29,3 +29,5 @@ node_modules/**     linguist-vendored=true
 *.css               linguist-detectable=true
 
 *.jar binary
+
+*.keystore binary
