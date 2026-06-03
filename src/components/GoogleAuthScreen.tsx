@@ -11,9 +11,11 @@ export const GoogleAuthScreen: React.FC = () => {
     try {
       setLoading(true)
       setError('')
-      const redirectTo = Capacitor.isNativePlatform() 
-        ? 'com.aplikasicubic.cubic://login' 
-        : window.location.origin;
+
+      // Redirect URL harus cocok dengan package ID di AndroidManifest.xml
+      const redirectTo = Capacitor.isNativePlatform()
+        ? 'com.aplikasicubic.cubicbaru://login'
+        : window.location.origin
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -23,11 +25,11 @@ export const GoogleAuthScreen: React.FC = () => {
         }
       })
 
-      if (error) throw error;
+      if (error) throw error
 
       // Jika di native, buka browser secara manual agar state terjaga
       if (Capacitor.isNativePlatform() && data?.url) {
-        await Browser.open({ url: data.url });
+        await Browser.open({ url: data.url })
       }
     } catch (err: any) {
       setError(err.message || 'Gagal login dengan Google')
