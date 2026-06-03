@@ -1615,6 +1615,7 @@ const MainApp: React.FC<MainAppProps> = ({
     try {
       const { error } = await supabase.from('digital_assets').upsert({
         store_id: finalStoreId,
+        user_id: googleUid,
         saldo_bank: currentSaldo,
         updated_at: new Date().toISOString()
       }, { onConflict: 'store_id' });
@@ -1657,6 +1658,10 @@ const MainApp: React.FC<MainAppProps> = ({
 
     const catConfigs = getCategoriesConfig();
     if (catConfigs[formKategori] === 'modal_jual') {
+      if (admin <= nominal) {
+        setIsSaving(false);
+        return showToast('Harga Jual harus lebih besar dari Modal!');
+      }
       finalAdmin = admin - nominal;
       finalNominal = nominal;
     }

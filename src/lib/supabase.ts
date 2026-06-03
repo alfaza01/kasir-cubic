@@ -250,7 +250,7 @@ class QueryChain {
         let matchedIndex = -1
         if (row.id) {
           matchedIndex = items.findIndex((item: any) => item.id === row.id)
-        } else if (this.table === 'store_settings' && row.store_id) {
+        } else if ((this.table === 'store_settings' || this.table === 'digital_assets') && row.store_id) {
           matchedIndex = items.findIndex((item: any) => item.store_id === row.store_id)
         }
 

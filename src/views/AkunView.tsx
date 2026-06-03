@@ -478,12 +478,6 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
 
           <div className="pt-2 pb-6 space-y-4">
             <button
-               onClick={props.onLogout}
-               className="w-full py-4 bg-slate-900 border border-transparent text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl"
-            >
-              <LogOut size={16} /> Keluar Akun Google
-            </button>
-            <button
                onClick={props.onRequestLogout}
                className="w-full py-4 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
             >
