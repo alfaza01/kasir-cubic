@@ -41,6 +41,42 @@ const RiwayatView: React.FC<RiwayatViewProps> = (props) => {
 
   const [currentTime, setCurrentTime] = useState(new Date())
   const [activePcTab, setActivePcTab] = useState<'transaksi' | 'tambah-saldo'>('transaksi')
+
+// Helper: Ubah kategori mutasi menjadi label readable + warna badge
+const getMutasiLabel = (kategori: string): { label: string; color: string; icon: string } => {
+  const k = (kategori || '').toLowerCase().trim();
+  if (k.includes('modal awal') || k.includes('modal tunai')) {
+    return { label: 'Modal Pagi / Awal', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'fa-sunrise' };
+  }
+  if (k.includes('operan shift')) {
+    return { label: 'Operan Shift', color: 'bg-violet-50 text-violet-700 border-violet-200', icon: 'fa-right-left' };
+  }
+  if (k.includes('pindah saldo') || k.includes('pindah')) {
+    return { label: 'Pindah Saldo', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: 'fa-shuffle' };
+  }
+  if (k.includes('saldo bank') || k.startsWith('isi saldo')) {
+    return { label: 'Tambah Saldo Bank', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'fa-building-columns' };
+  }
+  if (k.includes('inject saldo')) {
+    return { label: 'Inject Saldo', color: 'bg-sky-50 text-sky-700 border-sky-200', icon: 'fa-syringe' };
+  }
+  if (k.includes('real aplikasi') || k.includes('penyesuaian saldo')) {
+    return { label: 'Koreksi Saldo Aplikasi', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'fa-mobile-screen' };
+  }
+  if (k.includes('mutasi')) {
+    return { label: 'Mutasi Saldo', color: 'bg-teal-50 text-teal-700 border-teal-200', icon: 'fa-arrows-rotate' };
+  }
+  if (k.includes('tutup shift')) {
+    return { label: 'Tutup Shift', color: 'bg-rose-50 text-rose-700 border-rose-200', icon: 'fa-door-closed' };
+  }
+  if (k.includes('setor tunai')) {
+    return { label: 'Setor Tunai', color: 'bg-green-50 text-green-700 border-green-200', icon: 'fa-money-bill-wave' };
+  }
+  if (k.startsWith('isi') || k.startsWith('tambah')) {
+    return { label: kategori.replace(/^isi /i, 'Tambah '), color: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'fa-plus-circle' };
+  }
+  return { label: kategori, color: 'bg-slate-100 text-slate-600 border-slate-200', icon: 'fa-circle-dot' };
+};
   const [isPcKategoriOpen, setIsPcKategoriOpen] = useState(false)
   const [expandedSaldoId, setExpandedSaldoId] = useState<string | null>(null)
   const [subSaldoFilter, setSubSaldoFilter] = useState<string>('Semua')
@@ -741,12 +777,34 @@ const RiwayatView: React.FC<RiwayatViewProps> = (props) => {
                         <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                           <td className="py-3.5 px-5 text-xs text-slate-400 dark:text-slate-500 font-bold text-center">{i + 1}</td>
                           <td className="py-3.5 px-5 text-xs text-slate-500 dark:text-slate-400 font-medium">{tgl} • {jam}</td>
-                          <td className="py-3.5 px-5">
-                            <span className={cn("text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border", badgeStyle)}>
-                              {t.kategori.replace('Isi ', 'TAMBAH ')}
-                            </span>
+                        <td className="py-3.5 px-5">
+                            {(() => {
+                              const { label, color, icon } = getMutasiLabel(t.kategori);
+                              return (
+                                <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap flex items-center gap-1.5 w-fit ${color}`}>
+                                  <i className={`fa-solid ${icon} text-[8px]`}></i>
+                                  {label}
+                                </span>
+                              );
+                            })()}
                           </td>
-                          <td className="py-3.5 px-5 text-xs text-slate-600 dark:text-slate-400 font-bold">{t.keterangan || '-'}</td>
+                          <td className="py-3.5 px-5">
+                            {/* Tampilkan sumber → tujuan dengan nama tampilan */}
+                            {(t.sumber_dana || t.tujuan_dana) && (
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                {t.sumber_dana && (
+                                  <span className="text-[9px] font-black text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">{getWalletName(t.sumber_dana)}</span>
+                                )}
+                                {t.sumber_dana && t.tujuan_dana && (
+                                  <i className="fa-solid fa-arrow-right text-[8px] text-slate-400 shrink-0"></i>
+                                )}
+                                {t.tujuan_dana && (
+                                  <span className="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">{getWalletName(t.tujuan_dana)}</span>
+                                )}
+                              </div>
+                            )}
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{t.keterangan || '-'}</span>
+                          </td>
                           <td className="py-3.5 px-5 text-xs font-black text-right text-slate-900 dark:text-white">{t.nominal.toLocaleString('id-ID')}</td>
                           <td className="py-3.5 px-5">
                             <div className="flex items-center justify-center gap-2">
@@ -794,7 +852,7 @@ const RiwayatView: React.FC<RiwayatViewProps> = (props) => {
   }
 
   return (
-    <div className={cn("page-view hide-scrollbar", !props.active && "hidden", props.isPc && "flex-1 h-full w-full overflow-y-auto")} style={{ backgroundColor: 'var(--container-bg, #ffffff)' }}>
+    <div className={cn("page-view hide-scrollbar overflow-y-auto pb-24", !props.active && "hidden", props.isPc && "flex-1 h-full w-full")} style={{ backgroundColor: 'var(--container-bg, #ffffff)' }}>
       {/* HEADER TOKO IDENTIK BERANDA */}
       <div className="relative bg-gradient-to-br from-blue-700 to-blue-800 rounded-b-[2rem] shadow-md" style={{ paddingBottom: '2.5rem' }}>
         <div className="px-4 pt-12 pb-2 flex items-center justify-between gap-3">
@@ -1066,14 +1124,30 @@ const RiwayatView: React.FC<RiwayatViewProps> = (props) => {
                                  )}
                                />
                              </div>
-                            <div className="flex flex-col gap-0.5">
-                               <div className={cn(
-                                 "text-[13px] font-black uppercase leading-none",
-                                 t.kategori.includes('Bank') ? "text-blue-600" : 
-                                 t.kategori.includes('Real') ? "text-emerald-600" : "text-fuchsia-600"
-                               )}>
-                                 {t.kategori.replace('Isi ', 'TAMBAH ')}
-                               </div>
+                            <div className="flex flex-col gap-1">
+                                {(() => {
+                                   const { label, color, icon } = getMutasiLabel(t.kategori);
+                                   return (
+                                     <div className={`text-[11px] font-black uppercase leading-none tracking-widest px-2 py-1 rounded w-fit flex items-center gap-1.5 ${color}`}>
+                                       <i className={`fa-solid ${icon} text-[9px]`}></i>
+                                       {label}
+                                     </div>
+                                   );
+                                 })()}
+                                {/* Tampilkan sumber → tujuan dengan nama tampilan */}
+                                {(t.sumber_dana || t.tujuan_dana) && (
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    {t.sumber_dana && (
+                                      <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{getWalletName(t.sumber_dana)}</span>
+                                    )}
+                                    {t.sumber_dana && t.tujuan_dana && (
+                                      <i className="fa-solid fa-arrow-right text-[7px] text-slate-400"></i>
+                                    )}
+                                    {t.tujuan_dana && (
+                                      <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{getWalletName(t.tujuan_dana)}</span>
+                                    )}
+                                  </div>
+                                )}
                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                                   {(() => {
                                     const d = parseLocalISO(t.timestamp);

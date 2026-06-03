@@ -46,6 +46,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
 
   const [announcementInput, setAnnouncementInput] = useState(props.mainAnnouncement)
   const [textsInput, setTextsInput] = useState<string[]>(props.runningTexts || Array(15).fill(''))
+  const [textsRaw, setTextsRaw] = useState<string>(() => (props.runningTexts || []).join('\n'))
 
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -79,7 +80,11 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
 
   const handleSaveAnnouncements = () => {
     props.onSaveMainAnnouncement(announcementInput)
-    props.onSaveRunningTexts(textsInput)
+    // Split textarea by newlines, pad/trim to array of 15
+    const lines = textsRaw.split('\n').map(l => l.trim())
+    const padded = Array(15).fill('').map((_, i) => lines[i] || '')
+    setTextsInput(padded)
+    props.onSaveRunningTexts(padded)
     alert('Pengumuman Berhasil Disimpan!')
   }
 
@@ -359,71 +364,116 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                   <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                     <HelpCircle size={16} fill="currentColor" className="text-blue-300" />
                   </div>
-                  <span className="font-bold text-sm text-slate-800">Bantuan & Support</span>
+                  <span className="font-bold text-sm text-slate-800">Bantuan &amp; Support</span>
                 </div>
                 <ChevronRight size={18} className="text-slate-300" />
               </button>
               <button 
-                onClick={() => toggleSection('pengumuman')}
+                onClick={() => toggleSection('saranKritik')}
                 className="w-full flex items-center justify-between p-4 bg-white active:bg-slate-50"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <MessageSquare size={16} fill="currentColor" className="text-emerald-300" />
                   </div>
-                  <span className="font-bold text-sm text-slate-800">Saran & Kritik</span>
+                  <span className="font-bold text-sm text-slate-800">Saran &amp; Kritik</span>
                 </div>
-                {openSection === 'pengumuman' ? <ChevronDown size={18} className="text-slate-300" /> : <ChevronRight size={18} className="text-slate-300" />}
+                {openSection === 'saranKritik' ? <ChevronDown size={18} className="text-slate-300" /> : <ChevronRight size={18} className="text-slate-300" />}
               </button>
             </div>
             
              <AnimatePresence>
-                {openSection === 'pengumuman' && (
+                {openSection === 'saranKritik' && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden mt-2 bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm"
+                    className="overflow-hidden mt-2 bg-white border border-slate-200 rounded-2xl shadow-sm"
                   >
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Pengumuman Terbatas</label>
-                        <input
-                          type="text"
-                          value={announcementInput}
-                          onChange={e => setAnnouncementInput(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-xs font-bold text-slate-800"
-                        />
+                    <div className="p-5 space-y-4">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                        <p className="text-[9.5px] font-black text-emerald-800 uppercase tracking-widest mb-1">Sampaikan Masukan Anda</p>
+                        <p className="text-[9px] text-emerald-600 font-semibold leading-relaxed">
+                          Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke tim developer CUBIC melalui WhatsApp di bawah ini.
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1 block">Teks Berjalan Utama</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {textsInput.map((txt, index) => (
-                            <input
-                              key={index}
-                              type="text"
-                              placeholder={`Info ${index + 1}`}
-                              value={txt}
-                              onChange={e => {
-                                const updated = [...textsInput]
-                                updated[index] = e.target.value
-                                setTextsInput(updated)
-                              }}
-                              className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-[10px] text-slate-800"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <button 
-                        onClick={handleSaveAnnouncements}
-                        className="w-full py-3.5 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
+                      <a
+                        href="https://wa.me/6281234567890?text=Halo%20Tim%20CUBIC%2C%20saya%20ingin%20menyampaikan%20masukan%3A%20"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <Save size={16} /> SIMPAN PERUBAHAN
-                      </button>
+                        <MessageSquare size={15} />
+                        <span>Kirim Saran via WhatsApp</span>
+                      </a>
+                      <div className="text-center">
+                        <p className="text-[9px] text-slate-400 font-semibold">Versi Aplikasi: CUBIC v4.0</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">Akun: {props.googleEmail || props.kasirName}</p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
+
+            {/* PENGUMUMAN & TEKS BERJALAN - OWNER ONLY */}
+            {props.kasirRole === 'owner' && (
+              <div className="mt-3 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <button
+                  onClick={() => toggleSection('pengumuman')}
+                  className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0">
+                      <MessageSquare size={18} />
+                    </div>
+                    <div>
+                      <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">PENGUMUMAN &amp; TEKS IKLAN</span>
+                      <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Atur teks berjalan &amp; pengumuman beranda</span>
+                    </div>
+                  </div>
+                  {openSection === 'pengumuman' ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+                </button>
+                <AnimatePresence>
+                  {openSection === 'pengumuman' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden border-t border-slate-100"
+                    >
+                      <div className="p-5 space-y-4 bg-slate-50">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Pengumuman Terbatas</label>
+                          <input
+                            type="text"
+                            value={announcementInput}
+                            onChange={e => setAnnouncementInput(e.target.value)}
+                            className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-xs font-bold text-slate-800"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1 block">Teks Berjalan / Iklan</label>
+                          <p className="text-[9px] text-slate-400 font-semibold pl-1">Tulis setiap teks iklan di baris baru (maks. 15 baris)</p>
+                          <textarea
+                            rows={15}
+                            value={textsRaw}
+                            onChange={e => setTextsRaw(e.target.value)}
+                            placeholder={Array.from({length: 15}, (_, i) => `Info ${i + 1}`).join('\n')}
+                            className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-[11px] text-slate-800 font-semibold leading-relaxed resize-none"
+                          />
+                        </div>
+                        <button 
+                          onClick={handleSaveAnnouncements}
+                          className="w-full py-3.5 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <Save size={16} /> SIMPAN PERUBAHAN
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 pb-6 space-y-4">
@@ -431,7 +481,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                onClick={props.onLogout}
                className="w-full py-4 bg-slate-900 border border-transparent text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl"
             >
-              <Save size={16} /> SIMPAN PERUBAHAN
+              <LogOut size={16} /> Keluar Akun Google
             </button>
             <button
                onClick={props.onRequestLogout}

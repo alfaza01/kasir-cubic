@@ -319,7 +319,7 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
   }
 
   return (
-    <div className={cn("page-view bg-gray-50 hide-scrollbar pb-24", !active && "hidden")}>
+    <div className={cn("page-view bg-gray-50 hide-scrollbar overflow-y-auto pb-24", !active && "hidden")}>
       <div className="px-4 pt-7 pb-4 border-b flex justify-between items-center bg-slate-900 text-white shadow-lg">
         <button 
           onClick={() => setActiveView('view-beranda')}

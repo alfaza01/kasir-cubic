@@ -46,10 +46,10 @@ const SidePanel: React.FC<SidePanelProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 z-[1010] w-full max-w-sm bg-slate-900 border-l border-slate-800 text-white flex flex-col shadow-2xl overflow-hidden"
+            className="fixed top-0 right-0 bottom-0 z-[1010] w-full max-w-sm bg-white border-l border-slate-200 text-slate-900 flex flex-col shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
                   <i className="fa-solid fa-sliders text-sm"></i>
@@ -58,14 +58,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
                   <h3 className="font-extrabold text-[11px] uppercase tracking-wider text-blue-400">
                     Mode & Tema
                   </h3>
-                  <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                  <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
                     Pengaturan Aplikasi
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-all active:scale-90"
               >
                 <X size={16} />
               </button>
@@ -79,39 +79,39 @@ const SidePanel: React.FC<SidePanelProps> = ({
                   Informasi Sesi Aktif
                 </span>
                 
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4.5 space-y-3.5">
+                <div className="bg-slate-50 border border-slate-200 shadow-sm rounded-2xl p-4.5 space-y-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 shrink-0 text-slate-400">
+                    <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm shrink-0 text-slate-500">
                       <Store size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Toko</p>
-                      <p className="text-xs font-black text-white leading-tight uppercase truncate">{storeName || 'APLIKASI CUBIC'}</p>
-                      <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider truncate">{storeSubtext || 'Agen Brilink & Konter'}</p>
+                      <p className="text-xs font-black text-slate-900 leading-tight uppercase truncate">{storeName || 'APLIKASI CUBIC'}</p>
+                      <p className="text-[8px] text-slate-500 font-bold uppercase mt-0.5 tracking-wider truncate">{storeSubtext || 'Agen Brilink & Konter'}</p>
                     </div>
                   </div>
 
-                  <hr className="border-slate-800/50" />
+                  <hr className="border-slate-200" />
 
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 shrink-0 text-slate-400">
+                    <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm shrink-0 text-slate-500">
                       <User size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Kasir Aktif</p>
-                      <p className="text-xs font-black text-white leading-tight uppercase truncate">{kasirName || 'Owner'}</p>
+                      <p className="text-xs font-black text-slate-900 leading-tight uppercase truncate">{kasirName || 'Owner'}</p>
                     </div>
                   </div>
 
-                  <hr className="border-slate-800/50" />
+                  <hr className="border-slate-200" />
 
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-950/30 border border-emerald-900/30 flex items-center justify-center shrink-0 text-emerald-400 animate-pulse">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 text-emerald-500 animate-pulse">
                       <Fingerprint size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Mulai Kerja</p>
-                      <p className="text-xs font-black text-emerald-400 leading-tight truncate">{jamAbsen || '--:--:--'}</p>
+                      <p className="text-xs font-black text-emerald-600 leading-tight truncate">{jamAbsen || '--:--:--'}</p>
                     </div>
                   </div>
                 </div>
@@ -137,10 +137,10 @@ const SidePanel: React.FC<SidePanelProps> = ({
                         className={`p-3.5 rounded-2xl flex flex-col items-center justify-center gap-2 border text-center transition-all duration-250 active:scale-95 group ${
                           isActive
                             ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 font-black'
-                            : 'bg-slate-950/50 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                         }`}
                       >
-                        <mode.icon size={20} className={isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-400'} />
+                        <mode.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-500'} />
                         <span className="text-[9px] font-bold uppercase tracking-wider">{mode.label}</span>
                       </button>
                     )
@@ -168,7 +168,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
                         className={`p-3.5 rounded-2xl flex flex-col items-center justify-center gap-2 border text-center transition-all duration-250 active:scale-95 group ${
                           isActive
                             ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 font-black'
-                            : 'bg-slate-950/50 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${themeOpt.colorClass} shadow-md shrink-0`}>
@@ -183,7 +183,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-slate-800 bg-slate-950/30 text-center">
+            <div className="p-5 border-t border-slate-200 bg-slate-50 text-center">
               <p className="text-[7px] text-slate-500 font-extrabold uppercase tracking-[0.2em]">
                 Cubic Mobile v1.0.0
               </p>

@@ -52,7 +52,8 @@ interface BerandaViewProps {
   storeName: string
   storeSubtext: string
   storePhoto?: string
-  handleOwnerTambahModal: (kId: string, nom: number, kategori: string) => void
+  handleOwnerTambahModal: (kId: string, nom: number, kategori: string, tujuanDana?: string) => void
+  handleOwnerPenyesuaianModal?: (kId: string, current: number, newBal: number, kategori: string, tujuanDana?: string) => void
   kasLainnya: number
   totalKhusus: number
   totalNonTunai: number
@@ -66,6 +67,7 @@ interface BerandaViewProps {
   stores?: Store[]
   isPc?: boolean
   allTransactions?: Transaction[]
+  onSyncStoreSettings?: (targetId: string, overrides: any) => Promise<boolean>
 }
 
 const CyclingText: React.FC<{ texts: { text: string, isMain: boolean }[] }> = ({ texts }) => {
@@ -553,28 +555,94 @@ const BackupPanel: React.FC<{
     }
   };
 
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    onConfirm("UPLOAD DATA", `Fitur ini akan menyalin seluruh data dari file ${file.name} ke cabang ini. Transaksi lama akan tetap ada. Lanjutkan?`, async () => {
+      setIsImporting(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            const content = event.target?.result as string;
+            const parsed = JSON.parse(content);
+            if (!parsed.data) throw new Error("Format backup JSON tidak valid.");
+
+            const { transactions: importedTxs, absensi: importedAbsensi, catatanIzin: importedIzin } = parsed.data;
+
+            if (importedTxs && importedTxs.length > 0) {
+              // Ensure we write with current store_id
+              const cleanTxs = importedTxs.map((t: any) => ({ 
+                ...t, 
+                id: Date.now().toString() + Math.random().toString().slice(2, 6),
+                store_id: activeStoreId !== 'all' ? activeStoreId : t.store_id
+              }));
+              for (let i = 0; i < cleanTxs.length; i += 50) {
+                await supabase.from('transactions').insert(cleanTxs.slice(i, i + 50));
+              }
+            }
+
+            if (importedAbsensi && importedAbsensi.length > 0) {
+              const cleanAbs = importedAbsensi.map((a: any) => { 
+                const { id, ...rest } = a; 
+                return {
+                  ...rest,
+                  store_id: activeStoreId !== 'all' ? activeStoreId : rest.store_id
+                };
+              });
+              for (let i = 0; i < cleanAbs.length; i += 50) {
+                await supabase.from('absensi').insert(cleanAbs.slice(i, i + 50));
+              }
+            }
+
+            if (importedIzin && importedIzin.length > 0 && activeStoreId !== 'all') {
+               const existing = JSON.parse(localStorage.getItem(`alphaPro_${activeStoreId}_catatanIzin`) || '[]');
+               localStorage.setItem(`alphaPro_${activeStoreId}_catatanIzin`, JSON.stringify([...existing, ...importedIzin]));
+            }
+
+            showToast("Berhasil Import Data Jaringan!");
+            setTimeout(() => window.location.reload(), 2000);
+          } catch (err: any) {
+            showToast("Gagal memparsing JSON: " + err.message);
+            setIsImporting(false);
+          }
+        };
+        reader.readAsText(file);
+      } catch (err: any) {
+         showToast("Upload gagal: " + err.message);
+         setIsImporting(false);
+      }
+    });
+
+    e.target.value = ''; // Reset input
+  };
+
   const handleReset = async () => {
     onConfirm("RESET SISTEM", "Apakah Anda yakin? Seluruh data transaksi dan absensi akan dihapus permanen dan tidak bisa dikembalikan!", async () => {
       setResetStep(2);
       try {
-        // 1. Reset Transactions
-        let txQuery = supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        let txError: any = null;
+        let absError: any = null;
+
         if (activeStoreId !== 'all') {
-          txQuery = txQuery.eq('store_id', activeStoreId);
+          const res = await supabase.from('transactions').delete().eq('store_id', activeStoreId);
+          txError = res.error;
+          const resAbs = await supabase.from('absensi').delete().eq('store_id', activeStoreId);
+          absError = resAbs.error;
+        } else {
+          const res = await supabase.from('transactions').delete().neq('id', 'reset-trigger');
+          txError = res.error;
+          const resAbs = await supabase.from('absensi').delete().neq('id', -9999);
+          absError = resAbs.error;
         }
-        const { error: txError } = await txQuery;
-        
-        // 2. Reset Attendance
-        let absQuery = supabase.from('absensi').delete().neq('id', 0);
-        if (activeStoreId !== 'all') {
-          absQuery = absQuery.eq('store_id', activeStoreId);
-        }
-        const { error: absError } = await absQuery;
         
         // 3. Reset Local Data
         localStorage.removeItem(`alphaPro_${activeStoreId}_catatanIzin`);
         
-        if (txError || absError) throw new Error("Beberapa data gagal dihapus");
+        if (txError || absError) throw new Error("Beberapa data mungkin gagal dihapus");
         
         showToast("Sistem berhasil direset!");
         setTimeout(() => window.location.reload(), 2000); 
@@ -599,10 +667,28 @@ const BackupPanel: React.FC<{
           
           <button 
             onClick={handleBackup}
-            className="w-full bg-white text-blue-700 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-white text-blue-700 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
           >
             <i className="fa-solid fa-file-export"></i> Ekspor ke JSON
           </button>
+          
+          <label className={cn(
+            "w-full cursor-pointer bg-blue-800 border-2 border-blue-400 text-blue-100 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 relative",
+            isImporting ? "opacity-50 pointer-events-none" : "hover:bg-blue-700 hover:text-white"
+          )}>
+            <input 
+              type="file" 
+              accept=".json"
+              className="absolute inset-0 opacity-0 cursor-pointer hidden" 
+              onChange={handleImport}
+              id="importData"
+            />
+            {isImporting ? (
+              <><i className="fa-solid fa-circle-notch fa-spin"></i> Memproses Upload...</>
+            ) : (
+              <><i className="fa-solid fa-file-import"></i> Upload Data JSON</>
+            )}
+          </label>
         </div>
       </div>
 
@@ -700,6 +786,8 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
   const [ownerSaldoKasirId, setOwnerSaldoKasirId] = useState('')
   const [ownerSaldoNominal, setOwnerSaldoNominal] = useState('')
   const [ownerSaldoKategori, setOwnerSaldoKategori] = useState('Isi Saldo Bank')
+  const [ownerTujuanDana, setOwnerTujuanDana] = useState('Bank01')
+  const [ownerSaldoMode, setOwnerSaldoMode] = useState<'tambah'|'edit'>('tambah')
 
   // Audit State
   const [auditFisik, setAuditFisik] = useState('')
@@ -826,8 +914,8 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
   const totalPendapatanBersih = dailyStats.saldoLaciKasir; // since it calculates net physically added minus drawer start: wait, just use saldoLaciKasir if needed.
 
   return (
-    <div className={cn("page-view hide-scrollbar", !props.active && "hidden")}>
-      {!(props.isPc && isOwnerSubView) && (
+    <div className={cn("page-view hide-scrollbar overflow-y-auto pb-24", !props.active && "hidden", props.isPc && "flex-1 h-full w-full")}>
+      {!isOwnerSubView && (
         <>
           <div className="relative bg-gradient-to-br from-blue-700 to-blue-800 rounded-b-[2rem] shadow-md" style={{ paddingBottom: '2.5rem' }}>
             
@@ -885,65 +973,91 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
 
       <div className="mx-1.5 bg-white rounded-2xl p-4 shadow-xl mb-3 relative z-10" style={{ marginTop: '-2.5rem' }}>
         {props.kasirRole === 'owner' && (
-          <div className="mb-3 space-y-2">
-            {/* Store Filter */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 rounded-xl border border-blue-100/50 flex items-center justify-between shadow-sm">
-              <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1.5">
-                <i className="fa-solid fa-store text-blue-600"></i> Pantau Toko
-              </span>
-              <div className="relative">
+          <div className="mb-4">
+            {/* Store Filter - Highly Prominent */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-3.5 rounded-2xl shadow-lg border border-blue-400 relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 text-white/10 text-6xl">
+                <i className="fa-solid fa-store"></i>
+              </div>
+              <label className="text-[10px] font-black text-blue-100 uppercase tracking-widest mb-2 flex items-center gap-1.5 relative z-10">
+                <i className="fa-solid fa-satellite-dish text-yellow-300"></i> PANTAU DATA TOKO:
+              </label>
+              
+              <div className="relative z-10">
                  <select 
-                   value={props.pantauStoreId || 'all'}
+                   value={props.pantauStoreId || ''}
                    onChange={(e) => props.setPantauStoreId && props.setPantauStoreId(e.target.value)}
-                   className="bg-transparent text-blue-700 text-[10px] font-black outline-none border-none cursor-pointer text-right appearance-none pr-6 font-bold"
+                   className={cn(
+                     "w-full rounded-xl py-2.5 pl-3 pr-10 font-black text-sm outline-none border-none cursor-pointer appearance-none shadow-inner",
+                     !props.pantauStoreId ? "bg-rose-100 text-rose-900 border-2 border-rose-400 animate-pulse" : "bg-white text-blue-900"
+                   )}
                  >
-                   <option value="all">🌐 Semua Toko (Pusat)</option>
+                   <option value="" disabled>-- 🔴 PILIH TOKO TERLEBIH DAHULU --</option>
                    {(props.stores || []).map((store) => (
-                     <option key={store.id} value={store.id}>🏬 {store.name}</option>
+                     <option key={store.id} value={store.id}>🏬 {store.name.toUpperCase()}</option>
                    ))}
                  </select>
-                 <i className="fa-solid fa-chevron-down absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-blue-500 pointer-events-none"></i>
+                 <div className={cn(
+                   "absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none w-7 h-7 rounded-lg flex items-center justify-center",
+                   !props.pantauStoreId ? "bg-rose-200" : "bg-blue-100"
+                 )}>
+                   <i className={cn("fa-solid fa-chevron-down text-[10px]", !props.pantauStoreId ? "text-rose-700" : "text-blue-700")}></i>
+                 </div>
               </div>
             </div>
 
             {/* Cashier Filter - Only displayed if monitoring a specific store */}
-            {props.pantauStoreId !== 'all' && props.kasirList && Object.keys(props.kasirList).length > 0 && (
-              <div className="bg-blue-50/30 px-3 py-1.5 rounded-xl border border-blue-100/30 flex items-center justify-between">
-                <span className="text-[10px] font-black text-blue-800/80 uppercase tracking-widest flex items-center gap-1.5">
-                  <i className="fa-solid fa-user-tie text-blue-500"></i> Mode Pantau Kasir
+            {props.pantauStoreId && props.pantauStoreId !== 'all' && props.kasirList && Object.keys(props.kasirList).length > 0 && (
+              <div className="bg-blue-50/80 px-3 py-2 mt-2 rounded-xl border border-blue-200 flex items-center justify-between shadow-sm">
+                <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1.5">
+                  <i className="fa-solid fa-user-tie text-blue-600"></i> Filter Kasir:
                 </span>
                 <div className="relative flex-1 flex justify-end">
                    <select 
                      value={props.filterKasir || 'Semua'}
                      onChange={(e) => props.setFilterKasir && props.setFilterKasir(e.target.value)}
-                     className="bg-transparent text-blue-700/80 text-[10px] font-black outline-none border-none cursor-pointer text-right appearance-none pr-6 w-full relative z-50"
+                     className="bg-transparent text-blue-700 font-bold outline-none border-none cursor-pointer text-right appearance-none pr-6 w-full text-[11px]"
                    >
                      <option value="Semua">Semua Kasir</option>
                      {Object.entries(props.kasirList).filter(([id]) => id !== 'owner').map(([id, acc]) => (
                        <option key={id} value={id}>{acc.name}</option>
                      ))}
                    </select>
-                   <i className="fa-solid fa-chevron-down absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-blue-500/50 pointer-events-none"></i>
+                   <i className="fa-solid fa-chevron-down absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-blue-500 pointer-events-none"></i>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <p className="text-[11px] text-gray-600 font-black uppercase tracking-widest">ASET DIGITAL</p>
-            <h2 className="text-base font-black tracking-tight text-blue-800">{formatRupiah(props.saldoBank)}</h2>
+        <div className={cn("transition-all", (props.kasirRole === 'owner' && !props.pantauStoreId) ? "hidden" : "block")}>
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <p className="text-[11px] text-gray-600 font-black uppercase tracking-widest">ASET DIGITAL</p>
+              <h2 className="text-base font-black tracking-tight text-blue-800">{formatRupiah(props.saldoBank)}</h2>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-gray-600 font-black uppercase tracking-widest">SALDO LACI KASIR</p>
+              <h2 className="text-base font-black tracking-tight text-emerald-600">{formatRupiah(totalPendapatanBersih)}</h2>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] text-gray-600 font-black uppercase tracking-widest">SALDO LACI KASIR</p>
-            <h2 className="text-base font-black tracking-tight text-emerald-600">{formatRupiah(totalPendapatanBersih)}</h2>
-          </div>
+          <button onClick={() => setShowRincian(true)} className="bg-blue-600 hover:bg-blue-700 transition text-white text-[9px] px-4 py-1.5 rounded-xl font-black w-full mt-1 uppercase tracking-widest">
+            Detail rincian <i className="fa-solid fa-chevron-right ml-1 text-[7px]"></i>
+          </button>
         </div>
-        <button onClick={() => setShowRincian(true)} className="bg-blue-600 hover:bg-blue-700 transition text-white text-[9px] px-4 py-1.5 rounded-xl font-black w-full mt-1 uppercase tracking-widest">
-          Detail rincian <i className="fa-solid fa-chevron-right ml-1 text-[7px]"></i>
-        </button>
       </div>
+
+      {props.kasirRole === 'owner' && !props.pantauStoreId && (
+        <div className="flex-1 flex flex-col items-center justify-center py-24 text-center px-6">
+          <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-6 shadow-inner border-2 border-rose-100">
+            <i className="fa-solid fa-store fa-3x text-rose-300 animate-pulse"></i>
+          </div>
+          <h3 className="text-[14px] font-black text-rose-800 uppercase tracking-widest mb-2 leading-none">PILIH TOKO DULU</h3>
+          <p className="text-[11px] text-slate-500 font-bold max-w-[250px] leading-relaxed">Anda wajib memilih toko / cabang di atas sebelum dapat memantau atau mengelola data.</p>
+        </div>
+      )}
+
+      <div className={cn("flex flex-col gap-0", (props.kasirRole === 'owner' && !props.pantauStoreId) && "hidden")}>
 
       {/* Running Text Column — BELOW Saldo card */}
       {(props.mainAnnouncement || (props.runningTexts && props.runningTexts.some(t => t.trim() !== ''))) && (
@@ -1219,7 +1333,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
         </div>
       )}
 
-      {props.kasirRole === 'owner' && !props.isPc && (
+      {props.kasirRole === 'owner' && !props.isPc && !isOwnerSubView && (
         <div className="px-1.5 mb-8">
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 mb-6 shadow-lg shadow-orange-200/50 flex items-center gap-4 border-b-4 border-orange-600/20">
             <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/30 shadow-inner">
@@ -1261,6 +1375,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
           </div>
         </div>
       )}
+      </div>
         </>
       )}
 
@@ -1377,13 +1492,17 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                           const targetStoreId = props.pantauStoreId;
                           if (targetStoreId && targetStoreId !== 'all') {
                             localStorage.setItem(`alphaPro_${targetStoreId}_kasir_list`, JSON.stringify(newKasirList));
-                            supabase.from('store_settings').upsert({
-                              store_id: targetStoreId,
-                              cashiers: newKasirList,
-                              updated_at: new Date().toISOString()
-                            }).then(({ error }) => {
-                              if (error) console.error("Gagal update cashiers ke DB:", error.message);
-                            });
+                            if (props.onSyncStoreSettings) {
+                              props.onSyncStoreSettings(targetStoreId, { cashiers: newKasirList });
+                            } else {
+                              supabase.from('store_settings').upsert({
+                                store_id: targetStoreId,
+                                cashiers: newKasirList,
+                                updated_at: new Date().toISOString()
+                              }).then(({ error }) => {
+                                if (error) console.error("Gagal update cashiers ke DB:", error.message);
+                              });
+                            }
                           } else {
                             saveKasirAccounts(newKasirList);
                           }
@@ -1412,13 +1531,17 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                                   const targetStoreId = props.pantauStoreId;
                                   if (targetStoreId && targetStoreId !== 'all') {
                                     localStorage.setItem(`alphaPro_${targetStoreId}_kasir_list`, JSON.stringify(n));
-                                    supabase.from('store_settings').upsert({
-                                      store_id: targetStoreId,
-                                      cashiers: n,
-                                      updated_at: new Date().toISOString()
-                                    }).then(({ error }) => {
-                                      if (error) console.error("Gagal update cashiers ke DB:", error.message);
-                                    });
+                                    if (props.onSyncStoreSettings) {
+                                      props.onSyncStoreSettings(targetStoreId, { cashiers: n });
+                                    } else {
+                                      supabase.from('store_settings').upsert({
+                                        store_id: targetStoreId,
+                                        cashiers: n,
+                                        updated_at: new Date().toISOString()
+                                      }).then(({ error }) => {
+                                        if (error) console.error("Gagal update cashiers ke DB:", error.message);
+                                      });
+                                    }
                                   } else {
                                     saveKasirAccounts(n);
                                   }
@@ -2429,97 +2552,151 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
 
               {activeOwnerSubView === 'saldo' && (
                 <div className="space-y-6">
-                  {/* Form Tambah Modal */}
-                  <div className="bg-emerald-50 p-5 rounded-[2rem] border border-emerald-100 shadow-sm">
-                    <h4 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <i className="fa-solid fa-plus-circle"></i> Tambah Saldo Kasir
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[9px] font-black text-emerald-600 uppercase mb-1 ml-1 block">Kategori Saldo</label>
-                        <div className="relative">
-                          <select 
-                            value={ownerSaldoKategori}
-                            onChange={e => setOwnerSaldoKategori(e.target.value)}
-                            className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
-                          >
-                            <option value="Isi Saldo Bank">🏦 Aset Digital (Plafon)</option>
-                            <option value="Isi Modal Tunai Kasir">💵 Modal Tunai Kasir</option>
-                          </select>
-                          <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 pointer-events-none"></i>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[9px] font-black text-emerald-600 uppercase mb-1 ml-1 block">Pilih Kasir</label>
-                        <div className="relative">
-                          <select 
-                            value={ownerSaldoKasirId}
-                            onChange={e => setOwnerSaldoKasirId(e.target.value)}
-                            className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
-                          >
-                            <option value="">-- Pilih Kasir --</option>
-                            {Object.entries(props.kasirList).filter(([id]) => id !== 'owner').map(([id, acc]) => (
-                              <option key={id} value={id}>{acc.name} ({id})</option>
-                            ))}
-                          </select>
-                          <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 pointer-events-none"></i>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[9px] font-black text-emerald-600 uppercase mb-1 ml-1 block">Nominal Saldo</label>
-                        <input 
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="Contoh: 500.000"
-                          value={ownerSaldoNominal}
-                          onChange={e => setOwnerSaldoNominal(formatInputRupiah(e.target.value))}
-                          className="w-full bg-white border border-emerald-100 rounded-xl px-4 py-3 text-xs font-black text-gray-900 outline-none"
-                        />
-                      </div>
-
-                      <button 
-                        onClick={() => {
-                          const nominal = (ownerSaldoNominal.replace(/\./g, ''));
-                          if (!ownerSaldoKasirId || !nominal || parseInt(nominal) <= 0) return props.showToast('Pilih kasir dan masukkan nominal yang valid');
-                          props.onConfirm("TAMBAH SALDO", `Tambah ${ownerSaldoKategori} ${formatRupiah(parseInt(nominal))} ke kasir ${ownerSaldoKasirId}?`, () => {
-                            props.handleOwnerTambahModal?.(ownerSaldoKasirId, parseInt(nominal), ownerSaldoKategori);
-                            setOwnerSaldoNominal('');
-                            setOwnerSaldoKasirId('');
-                            props.showToast("Saldo berhasil ditambahkan");
-                          });
-                        }}
-                        className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 active:scale-95 transition-all"
-                      >
-                        Tambah Saldo Sekarang
-                      </button>
+                  {(!props.filterKasir || props.filterKasir === 'Semua') ? (
+                    <div className="bg-orange-50 border border-orange-200 rounded-[2rem] p-8 text-center shadow-sm">
+                      <i className="fa-solid fa-user-tie text-orange-400 fa-3x mb-4"></i>
+                      <h5 className="font-black text-[13px] text-orange-800 uppercase tracking-widest mb-2">Pilih Kasir Dahulu</h5>
+                      <p className="text-[10px] text-orange-700/80 font-bold leading-relaxed px-4">
+                        Untuk memantau, menyesuaikan (edit), atau menambah saldo, silakan <b className="text-orange-900">Pilih Kasir</b> spesifik pada header (di bawah nama toko).
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Ringkasan Modal Hari Ini */}
-                  <div className="space-y-3 mt-8">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Riwayat Penambahan Saldo Hari Ini</h4>
-                    {Object.entries(props.kasirList).filter(([id]) => id !== 'owner').map(([id, acc]) => {
-                      const today = getLocalDateString();
-                      const modalHariIni = props.transactions
-                        .filter(t => t.kasir_id === id && t.kategori.startsWith('Isi ') && t.timestamp.startsWith(today))
-                        .reduce((sum, t) => sum + t.nominal, 0);
-
-                      return (
-                        <div key={id} className="bg-white border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm">
-                          <div>
-                            <p className="text-xs font-black text-gray-800">{acc.name}</p>
-                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">ID: {id}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[13px] font-black text-emerald-600">{formatRupiah(modalHariIni)}</p>
-                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">Total Saldo Ditambahkan</p>
-                          </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-3 mb-2">
+                        <div className="bg-blue-50 border border-blue-100 rounded-[1.5rem] p-4 text-center">
+                          <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Aset Digital</p>
+                          <p className="text-sm font-black text-blue-900">{formatRupiah(props.saldoBank)}</p>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-[1.5rem] p-4 text-center">
+                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Laci Tunai (Modal)</p>
+                          <p className="text-sm font-black text-emerald-900">{formatRupiah((props.walletBalances && props.walletBalances['Bank08']) || 0)}</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
+                        <div className="flex gap-2 mb-5">
+                          <button 
+                            onClick={() => setOwnerSaldoMode('tambah')}
+                            className={cn("flex-1 text-[10px] font-black uppercase tracking-widest py-2 rounded-lg transition-all", ownerSaldoMode === 'tambah' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-50 text-gray-400')}
+                          >
+                            TAMBAH
+                          </button>
+                          <button 
+                            onClick={() => setOwnerSaldoMode('edit')}
+                            className={cn("flex-1 text-[10px] font-black uppercase tracking-widest py-2 rounded-lg transition-all", ownerSaldoMode === 'edit' ? 'bg-amber-100 text-amber-800' : 'bg-gray-50 text-gray-400')}
+                          >
+                            EDIT / SESUAIKAN
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-[9px] font-black text-gray-500 uppercase mb-1 ml-1 block">Kategori Saldo</label>
+                            <div className="relative">
+                              <select 
+                                value={ownerSaldoKategori}
+                                onChange={e => setOwnerSaldoKategori(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
+                              >
+                                <option value="Isi Saldo Bank">🏦 Aset Digital (Plafon)</option>
+                                <option value="Isi Modal Tunai Kasir">💵 Laci Tunai Kasir</option>
+                              </select>
+                              <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none"></i>
+                            </div>
+                          </div>
+                          
+                          {ownerSaldoKategori === 'Isi Saldo Bank' && (
+                            <div>
+                              <label className="text-[9px] font-black text-gray-500 uppercase mb-1 ml-1 block">Tujuan Dompet Digital</label>
+                              <div className="relative">
+                                <select 
+                                  value={ownerTujuanDana}
+                                  onChange={e => setOwnerTujuanDana(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 pr-10 text-xs font-black text-gray-900 outline-none appearance-none cursor-pointer"
+                                >
+                                  {getCategories().filter(id => id !== 'Bank08' && id !== 'Bank09').map(id => (
+                                    <option key={id} value={id}>💳 {getWalletName(id)}</option>
+                                  ))}
+                                </select>
+                                <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none"></i>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="text-[9px] font-black text-gray-500 uppercase mb-1 ml-1 block">
+                              {ownerSaldoMode === 'tambah' ? 'Nominal Ditambahkan' : 'Masukkan Nominal Aktual (Sesuai)'}
+                            </label>
+                            <input 
+                              type="text"
+                              inputMode="numeric"
+                              placeholder={ownerSaldoMode === 'tambah' ? "Contoh: 50.000" : "Sesuai hitungan akhir (contoh: 1.500.000)"}
+                              value={ownerSaldoNominal}
+                              onChange={e => setOwnerSaldoNominal(formatInputRupiah(e.target.value))}
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs font-black text-gray-900 outline-none focus:border-gray-300"
+                            />
+                          </div>
+
+                          <button 
+                            onClick={() => {
+                              const nominal = (ownerSaldoNominal.replace(/\./g, ''));
+                              if (!nominal || parseInt(nominal) < 0) return props.showToast('Masukkan nominal yang valid');
+                              const realNominal = parseInt(nominal);
+
+                              if (ownerSaldoMode === 'tambah') {
+                                props.onConfirm("TAMBAH SALDO", `Tambah Rp ${formatRupiah(realNominal)} ke ${ownerSaldoKategori} (Kasir: ${props.kasirList?.[props.filterKasir]?.name})?`, () => {
+                                  props.handleOwnerTambahModal?.(props.filterKasir, realNominal, ownerSaldoKategori, ownerSaldoKategori === 'Isi Saldo Bank' ? ownerTujuanDana : '');
+                                  setOwnerSaldoNominal('');
+                                  props.showToast("Saldo berhasil ditambahkan");
+                                });
+                              } else {
+                                // EDIT / SESUAIKAN MODE
+                                const currentBalance = ownerSaldoKategori === 'Isi Saldo Bank' ? props.saldoBank : (props.walletBalances && props.walletBalances['Bank08'] || 0);
+                                if (currentBalance === realNominal) return props.showToast('Saldo sudah sesuai.');
+                                const diff = realNominal - currentBalance;
+                                const actionText = diff > 0 ? `Menambah Rp ${formatRupiah(diff)}` : `Mengurangi Rp ${formatRupiah(Math.abs(diff))}`;
+                                
+                                props.onConfirm("KOREKSI SALDO", `Saldo akan diubah menjadi Rp ${formatRupiah(realNominal)}.\n\nTindakan: ${actionText} pada (Kasir: ${props.kasirList?.[props.filterKasir]?.name})?`, () => {
+                                  props.handleOwnerPenyesuaianModal?.(props.filterKasir, currentBalance, realNominal, ownerSaldoKategori, ownerSaldoKategori === 'Isi Saldo Bank' ? ownerTujuanDana : '');
+                                  setOwnerSaldoNominal('');
+                                  props.showToast("Koreksi saldo dikirim");
+                                });
+                              }
+                            }}
+                            className={cn("w-full text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all mt-4", ownerSaldoMode === 'tambah' ? 'bg-emerald-600 shadow-emerald-200' : 'bg-amber-500 shadow-amber-200')}
+                          >
+                            {ownerSaldoMode === 'tambah' ? 'Tambah Saldo Sekarang' : 'Simpan Penyesuaian'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Ringkasan Modal Hari Ini */}
+                      <div className="space-y-3 mt-8">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Riwayat Aset Saldo Hari Ini (KASIR: {props.kasirList?.[props.filterKasir]?.name})</h4>
+                        {(() => {
+                          const today = getLocalDateString();
+                          const txHariIni = props.allTransactions?.filter(t => t.kasir_id === props.filterKasir && t.timestamp.startsWith(today) && 
+                            (t.kategori.startsWith('Isi Saldo Bank') || t.kategori.startsWith('Isi Modal Tunai Kasir') || t.kategori.startsWith('Penarikan'))) || [];
+                          
+                          if (txHariIni.length === 0) {
+                            return <p className="text-[10px] text-gray-400 italic px-2">Belum ada riwayat penambahan atau penyesuaian hari ini.</p>
+                          }
+
+                          return txHariIni.map((t, idx) => (
+                            <div key={idx} className="bg-white border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                              <div>
+                                <p className="text-xs font-black text-gray-800">{t.kategori}</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">{t.keterangan || '-'}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className={cn("text-[13px] font-black", t.kategori.startsWith('Penarikan') ? 'text-amber-600' : 'text-emerald-600')}>{formatRupiah(t.nominal)}</p>
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -2551,59 +2728,59 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
       )}
       {props.kasirRole === 'owner' && !isOwnerSubView && (
         <div className="px-1.5 mb-8">
-          <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-blue-900 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/20 group">
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-blue-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl shadow-blue-900/20 group">
             {/* Background Ornaments */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/20 rounded-full -ml-16 -mb-16 blur-2xl"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center text-white border border-white/20 shadow-2xl shadow-black/20 group-hover:scale-105 transition-transform duration-500">
-                    <i className="fa-solid fa-crown text-2xl text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"></i>
+              <div className="flex items-center justify-between gap-2 mb-5 sm:mb-6">
+                <div className="flex items-center gap-3 sm:gap-4 shrink overflow-hidden">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl flex items-center justify-center text-white border border-white/20 shadow-2xl shadow-black/20 group-hover:scale-105 transition-transform duration-500">
+                    <i className="fa-solid fa-crown text-lg sm:text-2xl text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"></i>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">Kepala Toko Control</h3>
-                    <p className="text-[10px] text-blue-100/60 font-black uppercase tracking-[0.3em]">{props.storeName}</p>
+                  <div className="truncate">
+                    <h3 className="text-[14px] sm:text-xl font-black text-white tracking-tight leading-tight truncate">Kepala Toko Control</h3>
+                    <p className="text-[8px] sm:text-[10px] text-blue-100/60 font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] truncate">{props.storeName}</p>
                   </div>
                 </div>
 
                 {/* Filter Kasir Selector - Conditional */}
                 {localStorage.getItem('alphaPro_showKasirFilter') !== 'false' && (
-                  <div className="relative z-50">
+                  <div className="relative z-50 shrink-0">
                     <select 
                       value={props.filterKasir || 'Semua'}
                       onChange={(e) => props.setFilterKasir && props.setFilterKasir(e.target.value)}
-                      className="appearance-none bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-black py-2 pl-3 pr-8 rounded-xl outline-none cursor-pointer hover:bg-white/20 transition-all uppercase tracking-widest relative z-50 w-full"
+                      className="appearance-none bg-white/10 backdrop-blur-md border border-white/20 text-white text-[8px] sm:text-[9px] font-black py-1.5 sm:py-2 pl-2 sm:pl-3 pr-6 sm:pr-8 rounded-lg sm:rounded-xl outline-none cursor-pointer hover:bg-white/20 transition-all uppercase tracking-widest relative z-50 max-w-[80px] sm:max-w-none"
                     >
                       <option value="Semua" className="text-gray-900">Semua</option>
                       {Object.entries(props.kasirList).filter(([id]) => id !== 'owner').map(([id, acc]) => (
                         <option key={id} value={id} className="text-gray-900">{acc.name}</option>
                       ))}
                     </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50 text-[8px] z-10">
+                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50 text-[8px] z-10">
                       <i className="fa-solid fa-chevron-down"></i>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-3 rounded-2xl hover:bg-white/15 transition-all cursor-default">
-                  <p className="text-[8px] font-black text-blue-200/80 uppercase tracking-tighter mb-1">Volume</p>
-                  <p className="text-[13px] font-black text-white tabular-nums">{formatRupiah(ownerTotalVolume)}</p>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-white/15 transition-all cursor-default">
+                  <p className="text-[7.5px] sm:text-[8px] font-black text-blue-200/80 uppercase tracking-tighter mb-0.5 sm:mb-1">Volume</p>
+                  <p className="text-[11px] sm:text-[13px] font-black text-white tabular-nums truncate">{formatRupiah(ownerTotalVolume)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-3 rounded-2xl hover:bg-white/15 transition-all cursor-default">
-                  <p className="text-[8px] font-black text-emerald-300 uppercase tracking-tighter mb-1">Profit</p>
-                  <p className="text-[13px] font-black text-emerald-400 tabular-nums">{formatRupiah(ownerTotalAdmin)}</p>
+                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-white/15 transition-all cursor-default">
+                  <p className="text-[7.5px] sm:text-[8px] font-black text-emerald-300 uppercase tracking-tighter mb-0.5 sm:mb-1">Profit</p>
+                  <p className="text-[11px] sm:text-[13px] font-black text-emerald-400 tabular-nums truncate">{formatRupiah(ownerTotalAdmin)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-3 rounded-2xl hover:bg-white/15 transition-all cursor-default">
-                  <p className="text-[8px] font-black text-amber-300 uppercase tracking-tighter mb-1">Items</p>
-                  <p className="text-[13px] font-black text-amber-400 tabular-nums">{ownerTotalTrx}</p>
+                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-white/15 transition-all cursor-default">
+                  <p className="text-[7.5px] sm:text-[8px] font-black text-amber-300 uppercase tracking-tighter mb-0.5 sm:mb-1">Items</p>
+                  <p className="text-[11px] sm:text-[13px] font-black text-amber-400 tabular-nums truncate">{ownerTotalTrx}</p>
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   <span className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest">Sistem Online</span>
@@ -2615,32 +2792,34 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
         </div>
       )}
 
-      <div className="px-1.5 mb-3 pb-32">
-        <div className="bg-white border border-gray-300 rounded-xl p-2 shadow-sm mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white">
-              <i className="fa-solid fa-bolt text-[10px]"></i>
-            </div>
-            <div>
-              <p className="text-[10px] text-black font-black uppercase tracking-tighter">TERAKHIR</p>
-              <p className="text-[12px] font-black text-black leading-none mt-0.5">
-                {props.lastTx ? `${(props.lastTx.kategori === 'Transfer' || props.lastTx.kategori === 'Transfer Bank') && props.lastTx.sumber_dana ? getWalletName(props.lastTx.sumber_dana).toUpperCase() : props.lastTx.kategori.replace('Isi ', 'TAMBAH ').toUpperCase()} • ${formatRupiah(props.lastTx.nominal)}` : 'Belum ada'}
-              </p>
+      {!isOwnerSubView && (
+        <div className={cn("px-1.5 mb-3 pb-32", (props.kasirRole === 'owner' && !props.pantauStoreId) && "hidden")}>
+          <div className="bg-white border border-gray-300 rounded-xl p-2 shadow-sm mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                <i className="fa-solid fa-bolt text-[10px]"></i>
+              </div>
+              <div>
+                <p className="text-[10px] text-black font-black uppercase tracking-tighter">TERAKHIR</p>
+                <p className="text-[12px] font-black text-black leading-none mt-0.5">
+                  {props.lastTx ? `${(props.lastTx.kategori === 'Transfer' || props.lastTx.kategori === 'Transfer Bank') && props.lastTx.sumber_dana ? getWalletName(props.lastTx.sumber_dana).toUpperCase() : props.lastTx.kategori.replace('Isi ', 'TAMBAH ').toUpperCase()} • ${formatRupiah(props.lastTx.nominal)}` : 'Belum ada'}
+                </p>
+              </div>
             </div>
           </div>
+          
+          <div className="flex justify-between items-center mb-1.5 px-0.5">
+            <h3 className="font-black text-black text-[12px] uppercase tracking-tighter">RINGKASAN HARI INI</h3>
+            <button onClick={() => props.setActiveView('view-transaksi')} className="text-[11px] text-blue-700 font-black uppercase tracking-tighter border-b border-blue-700 leading-none">LIHAT SEMUA</button>
+          </div>
+          
+          <SummaryCards 
+            totalTransactions={ownerTotalTrx}
+            totalVolume={ownerTotalVolume}
+            totalAdmin={ownerTotalAdmin}
+          />
         </div>
-        
-        <div className="flex justify-between items-center mb-1.5 px-0.5">
-          <h3 className="font-black text-black text-[12px] uppercase tracking-tighter">RINGKASAN HARI INI</h3>
-          <button onClick={() => props.setActiveView('view-transaksi')} className="text-[11px] text-blue-700 font-black uppercase tracking-tighter border-b border-blue-700 leading-none">LIHAT SEMUA</button>
-        </div>
-        
-        <SummaryCards 
-          totalTransactions={ownerTotalTrx}
-          totalVolume={ownerTotalVolume}
-          totalAdmin={ownerTotalAdmin}
-        />
-      </div>
+      )}
     </div>
   )
 }

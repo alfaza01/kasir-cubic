@@ -34,7 +34,46 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      if (data) setStores(data)
+
+      if (data && data.length > 0) {
+        setStores(data)
+      } else {
+        // AUTO-PROVISIONING for new users
+        try {
+          const { data: newStore, error: createError } = await supabase
+            .from('stores')
+            .insert({
+              user_id: googleUid,
+              name: 'KASIR CUBIC',
+              subtext: 'Toko Bawaan / Demo Aplikasi',
+              photo_url: ''
+            })
+            .select()
+            .single()
+
+          if (createError) throw createError
+
+          if (newStore) {
+            // Setup default cashiers and settings
+            await supabase.from('store_settings').insert({
+              store_id: newStore.id,
+              cashiers: {
+                owner: { name: 'Owner Toko', pin: '0000', role: 'owner' },
+                kasir1: { name: 'Kasir Satu', pin: '1234', role: 'kasir' },
+                kasir2: { name: 'Kasir Dua', pin: '5678', role: 'kasir' }
+              },
+              presets: [],
+              running_texts: [],
+              main_announcement: '',
+              is_pin_enabled: true
+            })
+
+            setStores([newStore])
+          }
+        } catch (provisionError) {
+          console.error('Error auto-provisioning default store:', provisionError)
+        }
+      }
     } catch (err) {
       console.error('Error fetching stores:', err)
     } finally {

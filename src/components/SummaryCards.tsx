@@ -44,24 +44,24 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+    <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
       {cards.map((card, i) => {
         const Icon = card.icon
         return (
           <div 
             key={i}
-            className={`border rounded-[1.125rem] p-3 sm:p-4 flex flex-col transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden ${card.bgClass}`}
+            className={`border rounded-2xl p-2 sm:p-4 flex flex-col transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden ${card.bgClass}`}
           >
-            <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-black/5 mb-2.5 ${card.iconClass}`}>
-              <Icon size={14} className="sm:hidden" />
+            <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-black/5 mb-1.5 sm:mb-2.5 ${card.iconClass}`}>
+              <Icon size={12} className="sm:hidden" />
               <Icon size={18} className="hidden sm:block" />
             </div>
             
             <div className="min-w-0 z-10 w-full mt-auto">
-              <p className="text-[8px] font-black tracking-widest text-slate-500/80 uppercase leading-[1.2] mb-1 sm:mb-1.5 line-clamp-2 h-auto">
+              <p className="text-[8px] font-black tracking-widest text-slate-500/80 uppercase leading-[1.2] mb-0.5 sm:mb-1.5 line-clamp-1 h-auto">
                 {card.title.replace('JUMLAH TRANSAKSI', 'TRX').replace('VOLUME PENJUALAN', 'VOLUME').replace('ADMIN FEE (LABA)', 'LABA')}
               </p>
-              <h4 className="text-[12px] sm:text-sm font-black tracking-tight truncate leading-none">
+              <h4 className="text-[11px] sm:text-sm font-black tracking-tight truncate leading-none">
                 {card.value}
               </h4>
             </div>

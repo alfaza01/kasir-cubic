@@ -21,6 +21,7 @@ interface KasbonEntry {
   keterangan: string
   status: 'BELUM LUNAS' | 'LUNAS'
   created_at: string
+  kasirName?: string
 }
 
 export const KasbonView: React.FC<KasbonViewProps> = (props) => {
@@ -70,7 +71,8 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
       tanggal,
       keterangan: keterangan.trim() || '-',
       status: 'BELUM LUNAS',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      kasirName: props.kasirName
     }
 
     const updated = [newEntry, ...kasbonList]
@@ -111,17 +113,17 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
     .reduce((sum, item) => sum + item.nominal, 0)
 
   return (
-    <div className={cn(`flex-1 flex flex-col h-full overflow-hidden bg-slate-950 font-sans text-white ${props.isPc ? 'p-6' : 'p-4'}`, !props.active && 'hidden')}>
+    <div className={cn(`flex-1 flex flex-col bg-slate-50 font-sans text-slate-900 ${props.isPc ? 'h-full overflow-hidden p-6' : 'overflow-y-auto p-4 pb-24'}`, !props.active && 'hidden')}>
       {/* Top Bar */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80 shrink-0">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 shrink-0">
         <button
           onClick={() => props.setActiveView('view-beranda')}
-          className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"
+          className="w-9 h-9 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 shadow-sm transition-all active:scale-90"
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h3 className="font-extrabold text-[11px] text-blue-400 uppercase tracking-widest leading-none">
+          <h3 className="font-extrabold text-[11px] text-blue-600 uppercase tracking-widest leading-none">
             Catatan Kasbon & Piutang
           </h3>
           <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
@@ -131,11 +133,11 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
       </div>
 
       {/* Main Grid: Form + List */}
-      <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-3 gap-6 pb-14">
+      <div className={cn("flex-1 grid grid-cols-1 md:grid-cols-3 gap-6", props.isPc ? "overflow-hidden pb-14" : "pb-6")}>
         
         {/* Form Column */}
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4 h-fit md:col-span-1">
-          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit md:col-span-1">
+          <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-2">
             <Plus size={12} className="text-blue-500" />
             <span>Tambah Piutang Kasbon</span>
           </h4>
@@ -151,7 +153,7 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
                   placeholder="CONTOH: BUDI / KARYAWAN A"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white uppercase placeholder-slate-700 font-extrabold focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 uppercase placeholder-slate-400 font-extrabold focus:outline-none"
                 />
               </div>
             </div>
@@ -166,7 +168,7 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
                   placeholder="50.000"
                   value={nominalStr}
                   onChange={e => setNominalStr(formatInputRupiah(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-12 pr-4 py-2.5 text-xs font-black text-white placeholder-slate-700 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-12 pr-4 py-2.5 text-xs font-black text-slate-800 placeholder-slate-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -180,7 +182,7 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
                   required
                   value={tanggal}
                   onChange={e => setTanggal(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none"
                 />
               </div>
             </div>
@@ -194,7 +196,7 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
                   placeholder="Contoh: Pinjaman kasir / Beli pulsa"
                   value={keterangan}
                   onChange={e => setKeterangan(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-700 font-bold focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 font-bold focus:outline-none"
                 />
               </div>
             </div>
@@ -210,36 +212,36 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
         </div>
 
         {/* List Column */}
-        <div className="md:col-span-2 flex flex-col overflow-hidden h-full">
+        <div className={cn("md:col-span-2 flex flex-col", props.isPc ? "overflow-hidden h-full" : "h-auto")}>
           {/* Summary Box */}
-          <div className="bg-red-950/20 border border-red-900/30 rounded-2xl p-4 mb-4 flex items-center justify-between gap-4">
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-[7px] font-black text-red-400 tracking-widest uppercase leading-none mb-1">TOTAL BELUM DIBAYAR</p>
-              <h4 className="text-lg font-black text-white">{formatRupiah(totalBelumLunas)}</h4>
+              <p className="text-[7px] font-black text-red-600 tracking-widest uppercase leading-none mb-1">TOTAL BELUM DIBAYAR</p>
+              <h4 className="text-lg font-black text-slate-800">{formatRupiah(totalBelumLunas)}</h4>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-red-950/40 border border-red-900/40 flex items-center justify-center text-red-400 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
               <DollarSign size={16} />
             </div>
           </div>
 
           {/* List Content */}
-          <div className="flex-1 bg-slate-900/10 border border-slate-805 rounded-2xl overflow-hidden flex flex-col min-h-0">
-            <div className="p-3.5 bg-slate-950/40 border-b border-slate-800/60 font-black text-[8px] uppercase tracking-wider text-slate-500 select-none">
+          <div className={cn("bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden flex flex-col", props.isPc ? "flex-1 min-h-0" : "h-[400px]")}>
+            <div className="p-3.5 bg-slate-50/50 border-b border-slate-100 font-black text-[8px] uppercase tracking-wider text-slate-500 select-none">
               Daftar Catatan Piutang
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-800/40 pr-1 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 pr-1 hide-scrollbar">
               {kasbonList.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-600 gap-1.5 py-10 text-center">
-                  <FileText size={20} className="text-slate-700" />
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-1.5 py-10 text-center">
+                  <FileText size={20} className="text-slate-300" />
                   <p className="text-[9px] font-bold uppercase tracking-wider">Tidak ada catatan kasbon</p>
                 </div>
               ) : (
                 kasbonList.map(item => (
-                  <div key={item.id} className="p-4 flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-black text-white tracking-wider truncate uppercase">{item.name}</span>
+                  <div key={item.id} className={cn("p-4 flex gap-3", props.isPc ? "items-center justify-between" : "flex-col items-start")}>
+                    <div className="min-w-0 flex-1 w-full text-left">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="text-xs font-black text-slate-800 tracking-wider uppercase break-words">{item.name}</span>
                         <span className={`text-[6px] px-1.5 py-0.5 rounded-md font-black tracking-widest shrink-0 ${
                           item.status === 'LUNAS'
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-550/20'
@@ -248,19 +250,21 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
                           {item.status}
                         </span>
                       </div>
-                      <p className="text-xs font-black text-blue-400">{formatRupiah(item.nominal)}</p>
-                      <p className="text-[8px] text-slate-500 font-bold uppercase mt-1 tracking-wider">
-                        {item.tanggal} • {item.keterangan}
-                      </p>
+                      <p className="text-xs font-black text-blue-500">{formatRupiah(item.nominal)}</p>
+                      <div className="text-[8px] text-slate-500 font-bold uppercase mt-1.5 tracking-wider space-y-0.5">
+                        <div>📅 {item.tanggal}</div>
+                        <div>📝 {item.keterangan}</div>
+                        {item.kasirName && <div>👤 By: {item.kasirName}</div>}
+                      </div>
                     </div>
 
-                    <div className="flex gap-2 shrink-0">
+                    <div className={cn("flex gap-2 shrink-0", !props.isPc && "w-full justify-end pt-2 border-t border-slate-100")}>
                       <button
                         onClick={() => handleToggleLunas(item.id, item.status)}
                         className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center border transition-all active:scale-90 ${
                           item.status === 'LUNAS'
-                            ? 'bg-amber-950/30 border-amber-900/30 text-amber-500 hover:bg-slate-800'
-                            : 'bg-emerald-950/30 border-emerald-900/30 text-emerald-400 hover:bg-slate-850'
+                            ? 'bg-amber-950/30 border-amber-900/30 text-amber-500 hover:bg-slate-850'
+                            : 'bg-emerald-950/30 border-emerald-900/30 text-emerald-400 hover:bg-slate-800'
                         }`}
                         title={item.status === 'LUNAS' ? 'Set Belum Lunas' : 'Tandai Lunas'}
                       >

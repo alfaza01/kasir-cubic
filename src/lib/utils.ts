@@ -100,6 +100,8 @@ export const isDigitalPenjualan = (kategori: string) => {
     katLower.includes('aksesoris') ||
     katLower.startsWith('isi ') ||
     katLower.startsWith('tambah ') ||
+    katLower.startsWith('penarikan ') ||
+    katLower.startsWith('koreksi ') ||
     katLower.includes('modal') ||
     katLower.includes('inject saldo') ||
     katLower.includes('mutasi') ||
@@ -210,6 +212,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
   
   let saldoLaciKasir = 0;
   const walletBalances: Record<string, number> = {};
+  const saldoRealMap: Record<string, { value: number, time: string }> = {};
 
   txs.forEach(t => {
     // Basic volume and transaction counts for purely informative stats
@@ -226,32 +229,57 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
       kasModal += t.nominal;
     }
     if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
-      saldoReal += t.nominal;
+      const appName = ket || 'UNKNOWN';
+      if (!saldoRealMap[appName] || t.timestamp > saldoRealMap[appName].time) {
+        saldoRealMap[appName] = { value: t.nominal, time: t.timestamp };
+      }
     }
     
-    // Process purely financial transfer records for BALANCE (Double-Entry)
-    if (t.sumber_dana) {
-      const src = resolveWalletId(t.sumber_dana);
-      walletBalances[src] = (walletBalances[src] || 0) - t.nominal;
-    }
-    
-    if (t.tujuan_dana) {
-      const dst = resolveWalletId(t.tujuan_dana);
-      walletBalances[dst] = (walletBalances[dst] || 0) + (t.nominal + (t.admin_fee || t.adminFee || 0));
-    }
-    
-    // Some stats bypass logic if it's purely a system / modal insertion
-    if (t.kategori.startsWith('Isi') || t.kategori.startsWith('Tambah') || katLower.includes('operan shift') || katLower.includes('mutasi') || katLower.includes('setor tunai') || katLower === '___system___') {
-      return; 
+    let sumber = t.sumber_dana ? resolveWalletId(t.sumber_dana) : null;
+    let tujuan = t.tujuan_dana ? resolveWalletId(t.tujuan_dana) : null;
+
+    if (!t.sumber_dana && !t.tujuan_dana) {
+      // BACKWARD COMPATIBILITY: Legacy transactions without explicit wallets
+      if (t.kategori === 'Isi Saldo Bank') {
+        tujuan = 'Bank01';
+      } else if (t.kategori === 'Isi Modal Tunai Kasir') {
+        tujuan = 'Bank08';
+      } else if (isDigital) {
+        sumber = 'Bank01';
+        tujuan = 'Bank08';
+      } else if (t.kategori === 'Tarik Tunai') {
+        sumber = 'Bank08';
+        tujuan = 'Bank09';
+      } else if (t.kategori === 'Aksesoris') {
+        tujuan = 'Bank08';
+      }
     }
 
-    totalTransaksi++;
-    totalVolume += t.nominal;
+    if (sumber) {
+      walletBalances[sumber] = (walletBalances[sumber] || 0) - t.nominal;
+    }
+    
+    if (tujuan) {
+      walletBalances[tujuan] = (walletBalances[tujuan] || 0) + (t.nominal + (t.admin_fee || t.adminFee || 0));
+    }
+    
+    const isLayananPelanggan = ['transfer', 'tarik tunai', 'aksesoris', 'topup', 'pembayaran'].some(cat => katLower.includes(cat));
+    const isKhusus = ket.includes('[KHUSUS]');
+    const isTambahSaldo = t.kategori.startsWith('Isi') || t.kategori.startsWith('Tambah') || t.kategori.startsWith('Penarikan') || t.kategori.startsWith('Koreksi') || katLower.includes('inject saldo');
+    const isMutasiMode = katLower.includes('mutasi') || katLower.includes('setor tunai');
+    const isModal = katLower.includes('modal awal') || katLower.includes('modal tunai');
+    const isSistem = t.kategori === '___SYSTEM___' || !!katLower.match(/operan shift|tutup shift|pindah saldo/);
+    
+    const isPureSales = isLayananPelanggan || (!isKhusus && !isTambahSaldo && !isMutasiMode && !isModal && !isSistem);
+
+    if (isPureSales) {
+      totalTransaksi++;
+      totalVolume += t.nominal;
+    }
 
     // Aset Digital yang terpotong (legacy tracking)
-    if (isDigital) bankOut += t.nominal;
+    if (isDigital && isPureSales) bankOut += t.nominal;
 
-    const isKhusus = ket.includes('[KHUSUS]');
     const isAksesoris = t.kategori === 'Aksesoris';
     const isNonTunai = ket.includes('[NON_TUNAI]') || (isAksesoris && (t.tujuan_dana || '').toUpperCase().includes('PENAMPUNG'));
     const isAdminDalam = ket.includes('[ADMIN_DALAM]');
@@ -259,7 +287,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     if (isKhusus) {
       totalKhusus += (t.nominal + (t.adminFee || 0));
       if (isAdminDalam) adminDalam += (t.adminFee || 0);
-    } else {
+    } else if (isPureSales) {
       if (isAksesoris) {
         if (isNonTunai) {
           aksesorisNonTunai += t.nominal;
@@ -284,6 +312,8 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
       }
     }
   });
+
+  saldoReal = Object.values(saldoRealMap).reduce((sum, item) => sum + item.value, 0);
 
   // Saldo Laci Kasir strictly tied to the wallet balance calculation!
   saldoLaciKasir = walletBalances['Bank08'] || 0;
