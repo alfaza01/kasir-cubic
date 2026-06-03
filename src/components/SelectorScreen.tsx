@@ -118,11 +118,11 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
   }
 
   return (
-    <div className="min-h-screen font-sans w-full bg-slate-50 flex items-center justify-center pt-8 pb-10 px-4 min-h-[100dvh] overflow-y-auto hide-scrollbar">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-xl relative border border-slate-100 flex-shrink-0 mb-8 mt-auto">
-        <div className="p-8 pb-6">
+    <div className="min-h-screen font-sans w-full bg-slate-50 flex flex-col pt-6 pb-6 px-3 sm:px-4 min-h-[100dvh] overflow-y-auto hide-scrollbar">
+      <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl relative border border-slate-100 flex-shrink-0 mt-auto mx-auto">
+        <div className="p-5 sm:p-8 pb-5">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-10">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-6 sm:mb-8 text-center sm:text-left">
             <CubicLogo size={14} className="scale-100" />
             <div>
               <h1 className="text-2xl font-black flex items-center gap-1.5"><span className="text-slate-900 tracking-tight">CUBIC</span> <span className="text-blue-600 tracking-tight">Cloud</span></h1>
@@ -138,7 +138,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
               </span>
               <button 
                 onClick={() => onSelectRole('owner', 'all')}
-                className="w-full bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-left p-5 rounded-3xl transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] active:scale-95 flex items-center gap-4 relative overflow-hidden group"
+                className="w-full bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-left p-4 rounded-2xl sm:rounded-3xl transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] active:scale-95 flex items-center gap-3 relative overflow-hidden group"
               >
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/20 shrink-0 relative z-10 text-white group-hover:bg-white/10 transition-colors">
                   <ShieldCheck size={22} strokeWidth={2.5} />
@@ -191,7 +191,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
                     <button
                       key={store.id}
                       onClick={() => onSelectRole('kasir', store.id, store)}
-                      className="w-full bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-3xl transition-all shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] active:scale-95 flex items-center justify-between gap-3 text-left group"
+                      className="w-full bg-white hover:bg-slate-50 border border-slate-200 p-3 rounded-2xl transition-all shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] active:scale-95 flex items-center justify-between gap-3 text-left group"
                     >
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue-100 transition-colors">
@@ -215,7 +215,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
             <div className="w-full h-px bg-slate-100 my-4"></div>
 
             {/* User Profile */}
-            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 flex items-center justify-between gap-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
                 <User size={20} />
               </div>
@@ -231,7 +231,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
             {/* Logout Option */}
             <button 
               onClick={onLogoutGoogle}
-              className="w-full py-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 font-black text-[10px] tracking-widest uppercase rounded-2xl transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 font-black text-[10px] tracking-widest uppercase rounded-xl transition-all flex items-center justify-center gap-2 mt-4"
             >
               <LogOut size={14} strokeWidth={2.5} /> LOGOUT AKUN GOOGLE
             </button>
