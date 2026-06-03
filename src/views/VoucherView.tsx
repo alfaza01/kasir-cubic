@@ -19,6 +19,11 @@ interface VoucherViewProps {
   kasirRole: string
   kasirName?: string
   googleUid?: string
+  currentUsername?: string
+  kasirList?: Record<string, { name?: string; role?: string; pin?: string }>
+  incomingHandover?: any | null
+  onAcceptHandover?: () => void
+  onRejectHandover?: () => void
 }
 
 interface VoucherItem {
@@ -396,7 +401,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
 
     // 2. Fetch today's stock report
     try {
-      const reportId = `${props.activeStoreId}_${todayStr}`
+      const reportId = `${props.activeStoreId}_${props.currentUsername}_${todayStr}`
       const { data, error } = await supabase
         .from('voucher_stock_reports')
         .select('*')
@@ -407,7 +412,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
         setActiveReport(data as StockReport)
       } else {
         // Fallback local report
-        const storedReport = localStorage.getItem(`alphaPro_${props.activeStoreId}_report_${todayStr}`)
+        const storedReport = localStorage.getItem(`alphaPro_${props.activeStoreId}_${props.currentUsername}_report_${todayStr}`)
         if (storedReport) {
           setActiveReport(JSON.parse(storedReport))
         } else {
@@ -441,7 +446,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
         const nextOpname = isShiftOrReportChanged ? {} : { ...prev }
 
         // Load today's saved draft map if available
-        const draftKey = `alphaPro_${props.activeStoreId}_today_opname_draft_${todayStr}`
+        const draftKey = `alphaPro_${props.activeStoreId}_${props.currentUsername}_today_opname_draft_${todayStr}`
         const savedDraftStr = localStorage.getItem(draftKey)
         let savedDraft: Record<string, { awal: string; akhir: string }> = {}
         if (savedDraftStr) {
@@ -1092,7 +1097,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
               .from('voucher_stock_reports')
               .upsert(updatedReport)
 
-            localStorage.setItem(`alphaPro_${props.activeStoreId}_report_${todayStr}`, JSON.stringify(updatedReport))
+            localStorage.setItem(`alphaPro_${props.activeStoreId}_${props.currentUsername}_report_${todayStr}`, JSON.stringify(updatedReport))
             setActiveReport(updatedReport)
           }
 
@@ -1126,7 +1131,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
       await saveOnlineProducts(updatedProducts)
 
       // 3. Save the current opname inputs into today's draft backup so it reloads on page refresh
-      const draftKey = `alphaPro_${props.activeStoreId}_today_opname_draft_${todayStr}`
+      const draftKey = `alphaPro_${props.activeStoreId}_${props.currentUsername}_today_opname_draft_${todayStr}`
       localStorage.setItem(draftKey, JSON.stringify(opnameInputs))
 
       // 4. Update session starting stocks for items too so it matches current state if needed
@@ -1198,7 +1203,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
       'Konfirmasi closing malam ini akan mendaftarkan omset tunai & nontunai (QRIS), mengunci sisa stok voucher, serta memperbarui pembukuan toko. Kirim Laporan?',
       async () => {
         try {
-          const reportId = `${props.activeStoreId}_${todayStr}`
+          const reportId = `${props.activeStoreId}_${props.currentUsername}_${todayStr}`
 
           // 1. Gather item results computed from opname inputs
           const shiftItems: Record<string, { awal: number; akhir: number; sold: number; nontunai?: number }> = {}
@@ -1253,7 +1258,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
           if (upsertError) {
             console.error('Error saving report to Supabase:', upsertError.message)
           }
-          localStorage.setItem(`alphaPro_${props.activeStoreId}_report_${todayStr}`, JSON.stringify(updatedReport))
+          localStorage.setItem(`alphaPro_${props.activeStoreId}_${props.currentUsername}_report_${todayStr}`, JSON.stringify(updatedReport))
           setActiveReport(updatedReport)
 
           // 3. Update active live stock levels in product database
@@ -1447,7 +1452,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
 
           // Save report online & offline
           await supabase.from('voucher_stock_reports').upsert(updatedReport)
-          localStorage.setItem(`alphaPro_${props.activeStoreId}_report_${todayStr}`, JSON.stringify(updatedReport))
+          localStorage.setItem(`alphaPro_${props.activeStoreId}_${props.currentUsername}_report_${todayStr}`, JSON.stringify(updatedReport))
           setActiveReport(updatedReport)
 
           props.showToast('STOK HANDOVER BERHASIL DITERIMA & SEBAGAI MODAL SHIFT SIANG!')
@@ -1472,9 +1477,9 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
       'Apakah Anda yakin ingin membuka rekap-closing hari ini dan mereset status pembukuan hari ini?',
       async () => {
         try {
-          const reportId = `${props.activeStoreId}_${todayStr}`;
+          const reportId = `${props.activeStoreId}_${props.currentUsername}_${todayStr}`;
           await supabase.from('voucher_stock_reports').delete().eq('id', reportId);
-          localStorage.removeItem(`alphaPro_${props.activeStoreId}_report_${todayStr}`);
+          localStorage.removeItem(`alphaPro_${props.activeStoreId}_${props.currentUsername}_report_${todayStr}`);
           localStorage.removeItem(`alphaPro_${props.activeStoreId}_stok_voucher_${todayStr}`);
           
           setActiveReport(null);
@@ -3135,7 +3140,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
               ) : (
                 <div className="space-y-6">
                   {(() => {
-                    const liveReportId = `live_${props.activeStoreId}_${todayStr}`;
+                    const liveReportId = `live_${props.activeStoreId}_${props.currentUsername}_${todayStr}`;
                     const shiftItems: Record<string, { awal: number; akhir: number; sold: number; nontunai?: number }> = {};
                     let hasAnySales = false;
                     
