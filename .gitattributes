@@ -27,3 +27,5 @@ node_modules/**     linguist-vendored=true
 *.ts                linguist-detectable=true
 *.tsx               linguist-detectable=true
 *.css               linguist-detectable=true
+
+*.jar binary
