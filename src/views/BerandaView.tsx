@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { formatRupiah, formatInputRupiah, cn, getLocalISOString, getLocalDateString, parseLocalISO, getCategories, getWalletName, getCategoriesConfig, isDigitalPenjualan, calculateDailyStats } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { checkAppLicenseStatus } from '../lib/license'
 import TransactionForm from '../components/TransactionForm'
 import SummaryCards from '../components/SummaryCards'
 import type { Transaction, Store } from '../types'
@@ -836,6 +837,15 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
   }
 
   const [secretTap, setSecretTap] = useState(0);
+  const [licenseStatus, setLicenseStatus] = useState<any>(() => checkAppLicenseStatus())
+
+  useEffect(() => {
+    const check = () => setLicenseStatus(checkAppLicenseStatus())
+    check()
+    const interval = setInterval(check, 30000)
+    return () => clearInterval(interval)
+  }, [props.activeView])
+
   const activeOwnerSubView = props.activeView?.startsWith('view-owner-') ? props.activeView.replace('view-owner-', '') : null
   const isOwnerSubView = !!activeOwnerSubView
 
@@ -1337,26 +1347,52 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
 
       {props.kasirRole === 'owner' && !props.isPc && !isOwnerSubView && (
         <div className="px-1.5 mb-8">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 mb-6 shadow-lg shadow-orange-200/50 flex items-center gap-4 border-b-4 border-orange-600/20">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/30 shadow-inner">
-              <i className="fa-solid fa-shield-halved text-2xl"></i>
+          <div 
+            onClick={() => props.setActiveView('view-admin')}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 mb-4 shadow-lg shadow-orange-200/50 flex items-center gap-4 border-b-4 border-orange-600/20 cursor-pointer active:scale-[0.98] transition-all"
+          >
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/30 shadow-inner shrink-0">
+              {licenseStatus.state === 'ACTIVE' ? (
+                <i className="fa-solid fa-crown text-2xl text-yellow-300"></i>
+              ) : (
+                <i className="fa-solid fa-key text-2xl"></i>
+              )}
             </div>
-            <div>
-              <h3
-                onClick={() => {
-                  const newTap = secretTap + 1;
-                  setSecretTap(newTap);
-                  if (newTap >= 7) {
-                    props.setActiveView('view-admin');
-                    setSecretTap(0);
-                  }
-                }}
-                className="font-black text-white text-xl tracking-tight leading-none select-none cursor-pointer"
-              >
-                Panel Owner
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-white text-base tracking-tight leading-none uppercase">
+                {licenseStatus.state === 'ACTIVE' ? 'Lisensi Premium Aktif' : 'Aktivasi Lisensi Aplikasi'}
               </h3>
-              <p className="text-white/80 text-[11px] font-bold mt-1.5 uppercase tracking-widest">Kelola semua data toko</p>
+              <p className="text-white/95 text-[10px] font-bold mt-1.5 uppercase tracking-widest truncate">
+                {licenseStatus.state === 'TRIAL' && `Masa Percobaan: Sisa ${licenseStatus.daysLeft} Hari`}
+                {licenseStatus.state === 'ACTIVE' && `Paket: ${licenseStatus.packageType} (${licenseStatus.daysLeft} Hari Tersisa)`}
+                {licenseStatus.state === 'EXPIRED' && `Lisensi Tidak Aktif / Kedaluwarsa`}
+              </p>
+              <p className="text-white/70 text-[8px] font-bold uppercase tracking-tight mt-0.5">
+                Klik untuk Kelola / Aktivasi Lisensi Toko
+              </p>
             </div>
+            <div className="text-white/80 pr-1">
+              <i className="fa-solid fa-chevron-right text-sm"></i>
+            </div>
+          </div>
+
+          {/* Header Panel Owner */}
+          <div className="flex items-center gap-2 mb-3 mt-5 px-1">
+            <div className="w-1.5 h-4 bg-orange-500 rounded-full"></div>
+            <h3 
+              onClick={() => {
+                const newTap = secretTap + 1;
+                setSecretTap(newTap);
+                if (newTap >= 7) {
+                  props.setActiveView('view-admin');
+                  setSecretTap(0);
+                  props.showToast("Developer mode activated");
+                }
+              }}
+              className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider cursor-pointer select-none"
+            >
+              Panel Owner
+            </h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
