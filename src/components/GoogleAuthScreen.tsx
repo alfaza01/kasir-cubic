@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Capacitor } from '@capacitor/core'
 import { Browser } from '@capacitor/browser'
+import { CubaLogo } from './CubaLogo'
 
 export const GoogleAuthScreen: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -54,14 +55,12 @@ export const GoogleAuthScreen: React.FC = () => {
   return (
     <div className="login-screen">
       <div className="login-card fade-in relative">
-        <div className="mb-10">
-          <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-200">
-            <i className="fa-solid fa-cloud-bolt text-3xl text-white"></i>
-          </div>
+        <div className="mb-10 flex flex-col items-center">
+          <CubaLogo size={14} className="mx-auto mb-6 shadow-xl shadow-orange-100" />
           <h1 className="login-title">
-            CUBA <span className="login-title-accent">Cloud</span>
+            KASIR CUBA <span className="login-title-accent">Cloud</span>
           </h1>
-          <span className="login-subtitle">Enterprise Data Solutions</span>
+          <span className="login-subtitle">Pembukuan Kasir Agen</span>
           
           <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 text-left mt-6">
             <div className="flex items-center gap-3 mb-2">
@@ -69,11 +68,11 @@ export const GoogleAuthScreen: React.FC = () => {
                 <i className="fa-solid fa-shield-check text-[10px] text-blue-600"></i>
               </div>
               <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">
-                Data Isolation Protocol
+                Protokol Keamanan Data
               </h3>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed font-medium pl-9">
-              Your business intelligence is protected by bank-grade encryption and isolated per-tenant architecture.
+              Data transaksi dan laporan keuangan toko Anda dilindungi enkripsi standar perbankan serta terisolasi secara aman.
             </p>
           </div>
         </div>

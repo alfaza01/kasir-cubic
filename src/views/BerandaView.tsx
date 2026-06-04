@@ -1373,6 +1373,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               { id: 'view-owner-catatan', title: 'Catatan', desc: 'Catatan penting', icon: 'fa-clipboard', color: 'bg-yellow-600' },
               { id: 'view-owner-keamanan', title: 'Keamanan', desc: 'Pengaturan PIN', icon: 'fa-shield-halved', color: 'bg-slate-700' },
               { id: 'view-akun', title: 'Setting', desc: 'Identitas & App', icon: 'fa-gear', color: 'bg-slate-600' },
+              { id: 'view-admin', title: 'Lisensi', desc: 'Aktivasi App', icon: 'fa-key', color: 'bg-amber-600' },
             ].map((item) => (
               <button 
                 key={item.id}

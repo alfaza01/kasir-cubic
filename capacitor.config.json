@@ -1,6 +1,6 @@
 {
   "appId": "com.aplikasicubic.cubicbaru",
-  "appName": "Aplikasi Cubic",
+  "appName": "Kasir Cuba",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

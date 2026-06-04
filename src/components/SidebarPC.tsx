@@ -136,6 +136,7 @@ const SidebarPC: React.FC<SidebarPCProps> = ({
               { id: 'view-owner-audit', label: 'Audit Laci', icon: 'fa-file-signature' },
               { id: 'view-owner-backup', label: 'Backup & Reset', icon: 'fa-database' },
               { id: 'view-owner-keamanan', label: 'Keamanan Owner', icon: 'fa-shield-halved' },
+              { id: 'view-admin', label: 'Panel Lisensi', icon: 'fa-key' },
             ].map((item) => {
               const isActive = activeView === item.id;
               return (
