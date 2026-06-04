@@ -1,15 +1,17 @@
 import React, { useState } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '../lib/utils'
-import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle } from 'lucide-react'
+import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle, Key } from 'lucide-react'
+import { generateLicenseCode, LICENSE_PACKAGES } from '../lib/license'
 
 interface AdminViewProps {
   active: boolean
   isPc: boolean
   setActiveView: (view: string) => void
+  showToast?: (msg: string) => void
 }
 
-const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) => {
+const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, showToast }) => {
   const [logs, setLogs] = useState<string[]>([
     'System initialization successful.',
     'Offline database engine: LOCALSTORAGE synced.',
@@ -17,8 +19,65 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
     'Supabase integration active.'
   ])
   const [loading, setLoading] = useState(false)
+  const [genDeviceId, setGenDeviceId] = useState('')
+  const [genPackage, setGenPackage] = useState<keyof typeof LICENSE_PACKAGES>('STARTER')
+  const [generatedCode, setGeneratedCode] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [waNumber, setWaNumber] = useState('6281234567890')
+  const [genCustomerName, setGenCustomerName] = useState('')
+  const [clientRegistry, setClientRegistry] = useState<any[]>([])
+
+  React.useEffect(() => {
+    const savedWa = localStorage.getItem('cubic_owner_wa');
+    if (savedWa) setWaNumber(savedWa);
+    const savedReg = localStorage.getItem('cubic_client_registry');
+    if (savedReg) {
+      try { setClientRegistry(JSON.parse(savedReg)) } catch(e){}
+    }
+  }, []);
 
   if (!active) return null
+
+  if (!isAuthenticated) {
+    return (
+      <div className={cn(`flex-1 flex flex-col items-center justify-center h-full bg-slate-950 font-sans text-white ${isPc ? 'p-6' : 'p-4'}`, !active && "hidden")}>
+        <div className="w-full max-w-sm bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col items-center">
+          <div className="w-12 h-12 bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-4">
+            <Shield size={24} />
+          </div>
+          <h2 className="text-lg font-black uppercase tracking-widest mb-1 text-center">Developer Access</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center mb-6">Restricted System Area</p>
+          
+          <input 
+            type="password"
+            placeholder="ENTER AUTHORIZATION KEY"
+            value={authPassword}
+            onChange={e => setAuthPassword(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (authPassword === 'Umbui123@') setIsAuthenticated(true)
+                else alert('Akses Ditolak')
+              }
+            }}
+            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3.5 text-xs text-center text-white font-black tracking-[0.2em] focus:outline-none mb-4"
+          />
+          <button 
+            onClick={() => {
+              if (authPassword === 'Umbui123@') setIsAuthenticated(true)
+              else alert('Akses Ditolak')
+            }}
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs tracking-widest uppercase rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all mb-4"
+          >
+            AUTHORIZE
+          </button>
+          <button onClick={() => setActiveView('view-beranda')} className="text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest">
+            KEMBALI KE BERANDA
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const addLog = (msg: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev])
@@ -80,7 +139,7 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
       {/* Main Content Areas */}
       <div className="flex-1 overflow-y-auto space-y-6 hide-scrollbar pb-10">
         {/* Diagnostics Card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={cn("grid gap-4", isPc ? "grid-cols-2" : "grid-cols-1")}>
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
               <Database size={12} className="text-blue-500" />
@@ -111,14 +170,39 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
             </div>
           </div>
 
-          {/* Console / Terminal simulation for logs */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 flex flex-col h-64 md:h-auto">
+          {/* Settings & Configuration Card */}
+          <div className={cn("bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 flex flex-col", isPc ? "h-auto" : "h-64")}>
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-3 shrink-0">
               <Terminal size={12} className="text-blue-500" />
-              <span>Realtime Debug Console</span>
+              <span>Sistem & Konfigurasi</span>
             </h4>
-
-            <div className="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-850 font-mono text-[8px] text-slate-400 overflow-y-auto space-y-1.5 scrollbar-thin">
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Nomor WhatsApp Owner (Aktivasi)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={waNumber}
+                    onChange={e => setWaNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="628..."
+                    className="flex-1 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
+                  />
+                  <button 
+                    onClick={() => {
+                      localStorage.setItem('cubic_owner_wa', waNumber);
+                      alert('Nomor WhatsApp berhasil disimpan!');
+                    }}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Simpan
+                  </button>
+                </div>
+                <p className="text-[8px] text-slate-500 mt-2 font-medium">Gunakan kode negara (62). Contoh: 628123456789</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-850 font-mono text-[8px] text-slate-400 overflow-y-auto space-y-1.5 scrollbar-thin mt-4">
               {logs.map((log, index) => (
                 <div key={index} className="flex gap-2">
                   <span className="text-blue-500 select-none">&gt;</span>
@@ -129,6 +213,146 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
           </div>
         </div>
 
+        {/* License Generator Card */}
+        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+            <Key size={12} className="text-amber-500" />
+            <span>License Generator (Offline)</span>
+          </h4>
+          
+          <div className={cn("grid gap-4", isPc ? "grid-cols-3" : "grid-cols-1")}>
+            <div className={cn("space-y-3", isPc && "col-span-2")}>
+              <div>
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Nama Toko / Pembeli</label>
+                <input 
+                  type="text" 
+                  value={genCustomerName}
+                  onChange={e => setGenCustomerName(e.target.value)}
+                  placeholder="Misal: Alfaza Cell (Kasir 1)"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Customer Device ID</label>
+                  <input 
+                    type="text" 
+                    value={genDeviceId}
+                    onChange={e => setGenDeviceId(e.target.value.toUpperCase())}
+                    placeholder="ID-..."
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Package Type</label>
+                  <select 
+                    value={genPackage}
+                    onChange={e => setGenPackage(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
+                  >
+                    <option value="STARTER">STARTER (30 Hari)</option>
+                    <option value="BRONZE">BRONZE (5 Bulan)</option>
+                    <option value="GOLD">GOLD (1 Tahun)</option>
+                    <option value="DIAMOND">DIAMOND (Selamanya)</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if(!genCustomerName.trim()) return alert('Masukkan Nama Pembeli');
+                  if(!genDeviceId.trim()) return alert('Masukkan Device ID');
+                  const code = generateLicenseCode(genDeviceId.trim(), genPackage);
+                  setGeneratedCode(code);
+                  
+                  const newEntry = {
+                    id: Date.now(),
+                    name: genCustomerName.trim(),
+                    deviceId: genDeviceId.trim(),
+                    packageType: genPackage,
+                    code: code,
+                    date: new Date().toISOString()
+                  };
+                  const newRegistry = [newEntry, ...clientRegistry];
+                  setClientRegistry(newRegistry);
+                  localStorage.setItem('cubic_client_registry', JSON.stringify(newRegistry));
+                  
+                  addLog(`Generated ${genPackage} license for ${genCustomerName.trim()}`);
+                  setGenCustomerName('');
+                  setGenDeviceId('');
+                }}
+                className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-black text-[10px] tracking-widest uppercase rounded-xl shadow-lg active:scale-95 transition-all"
+              >
+                Generate Kode Aktivasi
+              </button>
+            </div>
+            
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">Kode 16-Digit</p>
+              {generatedCode ? (
+                <>
+                  <p className="font-mono text-lg font-black text-amber-400 tracking-wider mb-4 break-all px-2">{generatedCode}</p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedCode);
+                      alert('Kode dicopy ke clipboard!');
+                    }}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors"
+                  >
+                    Copy Kode
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs font-bold text-slate-600">- Belum ada kode -</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Client Registry Card */}
+        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <Database size={12} className="text-blue-500" />
+              <span>Client Registry (Riwayat License)</span>
+            </h4>
+            <span className="text-[10px] bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded-full font-bold">Total: {clientRegistry.length}</span>
+          </div>
+          
+          <div className="space-y-3">
+            {clientRegistry.length > 0 ? (
+              clientRegistry.map((client) => (
+                <div key={client.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+                  <div>
+                    <h5 className="text-xs font-black text-white mb-0.5">{client.name}</h5>
+                    <div className="flex gap-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                      <span><span className="text-slate-600">ID:</span> {client.deviceId}</span>
+                      <span><span className="text-slate-600">PKG:</span> {client.packageType}</span>
+                      <span>{new Date(client.date).toLocaleDateString('id-ID')}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-amber-500 font-bold bg-amber-950/30 px-2 py-1 rounded">{client.code}</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(client.code);
+                        showToast && showToast("Kode dicopy!");
+                      }}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs transition-colors"
+                      title="Copy Kode"
+                    >
+                      <Key size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-slate-500 text-xs font-bold bg-slate-950/50 rounded-xl border border-slate-800/50">
+                Belum ada riwayat pembuatan lisensi.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Diagnostic Metadata Grid */}
         <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -136,7 +360,7 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView }) =>
             <span>Platform Capabilities</span>
           </h4>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className={cn("grid gap-3", isPc ? "grid-cols-4" : "grid-cols-2")}>
             {[
               { label: 'Environment', value: 'Production Web v1.1' },
               { label: 'Capacitor', value: 'Active / Core v8' },

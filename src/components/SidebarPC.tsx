@@ -1,7 +1,7 @@
 import React from 'react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { CubicLogo } from './CubicLogo'
+import { CubaLogo } from './CubaLogo'
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -50,11 +50,11 @@ const SidebarPC: React.FC<SidebarPCProps> = ({
               alt="Logo" 
             />
           ) : (
-            <CubicLogo size={10} className="w-10 h-10 -ml-1 saturate-[1.2]" />
+            <CubaLogo size={10} className="w-10 h-10 -ml-1 saturate-[1.2]" />
           )}
           <div className="min-w-0 flex-1">
             <h3 className="font-black text-xs text-blue-400 tracking-wider truncate leading-tight uppercase">
-              {storeName || 'APLIKASI CUBIC'}
+              {storeName || 'Kasir Cuba'}
             </h3>
             <p className="text-[7px] text-slate-400 font-bold uppercase tracking-[0.15em] mt-0.5 truncate leading-none">
               {storeSubtext || 'Agen Brilink & Konter'}
@@ -69,7 +69,7 @@ const SidebarPC: React.FC<SidebarPCProps> = ({
           Navigasi Utama
         </span>
         {menuItems.map((item) => {
-          const isActive = activeView === item.id || (item.id === 'view-beranda' && activeView.startsWith('view-owner-') && activeView !== 'view-owner-laporan' && activeView !== 'view-owner-monitor' && activeView !== 'view-owner-grafik' && activeView !== 'view-owner-performa' && activeView !== 'view-owner-absen' && activeView !== 'view-owner-izin' && activeView !== 'view-owner-gaji' && activeView !== 'view-owner-backup' && activeView !== 'view-owner-audit')
+          const isActive = activeView === item.id || (item.id === 'view-beranda' && activeView.startsWith('view-owner-') && activeView !== 'view-owner-laporan' && activeView !== 'view-owner-monitor' && activeView !== 'view-owner-grafik' && activeView !== 'view-owner-performa' && activeView !== 'view-owner-absen' && activeView !== 'view-owner-izin' && activeView !== 'view-owner-gaji' && activeView !== 'view-owner-backup' && activeView !== 'view-owner-audit' && activeView !== 'view-owner-keamanan')
           
           return (
             <button
@@ -135,6 +135,7 @@ const SidebarPC: React.FC<SidebarPCProps> = ({
               { id: 'view-owner-gaji', label: 'Penggajian', icon: 'fa-dollar-sign' },
               { id: 'view-owner-audit', label: 'Audit Laci', icon: 'fa-file-signature' },
               { id: 'view-owner-backup', label: 'Backup & Reset', icon: 'fa-database' },
+              { id: 'view-owner-keamanan', label: 'Keamanan Owner', icon: 'fa-shield-halved' },
             ].map((item) => {
               const isActive = activeView === item.id;
               return (

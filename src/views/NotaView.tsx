@@ -10,7 +10,7 @@ interface NotaItem {
 
 const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; showToast: (m: string) => void; onConfirm: (t: string, m: string, c: () => void) => void; isPc?: boolean }> = ({ active, setActiveView, isPc }) => {
   
-  const [shopName, setShopName] = useState("KASIR CUBIC");
+  const [shopName, setShopName] = useState("Kasir Cuba");
   const [address, setAddress] = useState("Jl. Merdeka No. 123, Indonesia");
   const [items, setItems] = useState<NotaItem[]>([]);
   const [currentItem, setCurrentItem] = useState<NotaItem>({ nama: "", harga: "", jumlah: "" });
@@ -329,7 +329,7 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
         </button>
         <div className="text-center">
           <h2 className="font-black text-xs uppercase tracking-widest leading-none">NOTA DIGITAL</h2>
-          <p className="text-[8px] text-white/50 mt-1 font-bold">APLIKASI CUBIC</p>
+          <p className="text-[8px] text-white/50 mt-1 font-bold">Kasir Cuba</p>
         </div>
         <button 
           onClick={() => setActiveView('view-beranda')}

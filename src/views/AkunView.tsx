@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { User, CloudLightning, MessageSquare, KeyRound, Save, RefreshCw, LogOut, Sliders, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react'
+import { User, CloudLightning, MessageSquare, KeyRound, Save, RefreshCw, LogOut, Sliders, ChevronDown, ChevronRight, HelpCircle, CheckSquare, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 interface AkunViewProps {
@@ -50,10 +50,20 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
 
   const [openSection, setOpenSection] = useState<string | null>(null)
 
-  if (!props.active) return null
-
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section)
+  }
+
+  const [ownerPinEnabled, setOwnerPinEnabled] = useState(() => localStorage.getItem('alphaPro_owner_pin_enabled') !== 'false')
+  const [ownerMasterPin, setOwnerMasterPin] = useState(() => localStorage.getItem('alphaPro_owner_pin') || '0000')
+  const [showOwnerPin, setShowOwnerPin] = useState(false)
+
+  if (!props.active) return null
+
+  const handleSaveOwnerSecurity = () => {
+    localStorage.setItem('alphaPro_owner_pin_enabled', ownerPinEnabled ? 'true' : 'false')
+    localStorage.setItem('alphaPro_owner_pin', ownerMasterPin)
+    alert('Pengaturan Keamanan Owner Berhasil Disimpan!')
   }
 
   const handleSaveStoreIdentity = async () => {
@@ -99,12 +109,22 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
               Kelola profil dan keamanan
             </p>
           </div>
-          <button 
-            onClick={() => props.setIsSidePanelOpen(true)}
-            className="w-12 h-12 bg-white/10 hover:bg-white/20 transition-all rounded-full flex items-center justify-center text-white border border-white/20 shadow-sm"
-          >
-            <User size={20} strokeWidth={2.5} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!props.isPc && props.kasirRole === 'owner' && (
+              <button 
+                onClick={() => props.setActiveView('view-beranda')}
+                className="w-12 h-12 bg-white/10 hover:bg-white/20 transition-all rounded-full flex items-center justify-center text-white border border-white/20 shadow-sm"
+              >
+                <i className="fa-solid fa-arrow-left"></i>
+              </button>
+            )}
+            <button 
+              onClick={() => props.setIsSidePanelOpen(true)}
+              className="w-12 h-12 bg-white/10 hover:bg-white/20 transition-all rounded-full flex items-center justify-center text-white border border-white/20 shadow-sm"
+            >
+              <User size={20} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -159,6 +179,66 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                         className="w-full py-3.5 bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-xl mt-2 active:scale-95 transition-all"
                       >
                         SIMPAN TOKO
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* PENGUMUMAN & TEKS BERJALAN - OWNER ONLY */}
+          {props.kasirRole === 'owner' && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <button
+                onClick={() => toggleSection('pengumuman')}
+                className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0">
+                    <MessageSquare size={18} />
+                  </div>
+                  <div>
+                    <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">PENGUMUMAN & TEKS IKLAN</span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Atur teks berjalan & pengumuman beranda</span>
+                  </div>
+                </div>
+                {openSection === 'pengumuman' ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+              </button>
+              <AnimatePresence>
+                {openSection === 'pengumuman' && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-slate-100"
+                  >
+                    <div className="p-5 space-y-4 bg-slate-50">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Pengumuman Terbatas</label>
+                        <input
+                          type="text"
+                          value={announcementInput}
+                          onChange={e => setAnnouncementInput(e.target.value)}
+                          className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-xs font-bold text-slate-800"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1 block">Teks Berjalan / Iklan</label>
+                        <p className="text-[9px] text-slate-400 font-semibold pl-1">Tulis setiap teks iklan di baris baru (maks. 15 baris)</p>
+                        <textarea
+                          rows={15}
+                          value={textsRaw}
+                          onChange={e => setTextsRaw(e.target.value)}
+                          placeholder={Array.from({length: 15}, (_, i) => `Info ${i + 1}`).join('\n')}
+                          className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-[11px] text-slate-800 font-semibold leading-relaxed resize-none"
+                        />
+                      </div>
+                      <button 
+                        onClick={handleSaveAnnouncements}
+                        className="w-full py-3.5 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <Save size={16} /> SIMPAN PERUBAHAN
                       </button>
                     </div>
                   </motion.div>
@@ -298,23 +378,26 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
             </button>
           </div>
 
-          {/* PIN & NAMA KASIR */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <button 
-              onClick={() => toggleSection('pin')}
-              className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shrink-0">
-                  <User size={18} fill="currentColor" className="text-blue-300" />
+
+
+          {/* PIN & NAMA KASIR (HANYA KASIR) */}
+          {props.kasirRole !== 'owner' && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <button 
+                onClick={() => toggleSection('pin')}
+                className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                    <User size={18} fill="currentColor" className="text-blue-300" />
+                  </div>
+                  <div>
+                    <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">PIN & NAMA KASIR</span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Edit nama dan PIN kasir Anda</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">PIN & NAMA KASIR</span>
-                  <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Edit nama dan PIN kasir Anda</span>
-                </div>
-              </div>
-              {openSection === 'pin' ? <ChevronDown size={20} className="text-slate-400 shrink-0" /> : <ChevronDown size={20} className="text-slate-400 -rotate-90 shrink-0" />}
-            </button>
+                {openSection === 'pin' ? <ChevronDown size={20} className="text-slate-400 shrink-0" /> : <ChevronDown size={20} className="text-slate-400 -rotate-90 shrink-0" />}
+              </button>
             <AnimatePresence>
               {openSection === 'pin' && (
                 <motion.div
@@ -354,6 +437,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
               )}
             </AnimatePresence>
           </div>
+          )}
 
           <div className="pt-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-2">MENU AKUN</h3>
@@ -394,11 +478,11 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
                         <p className="text-[9.5px] font-black text-emerald-800 uppercase tracking-widest mb-1">Sampaikan Masukan Anda</p>
                         <p className="text-[9px] text-emerald-600 font-semibold leading-relaxed">
-                          Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke tim developer CUBIC melalui WhatsApp di bawah ini.
+                          Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke tim developer CUBA melalui WhatsApp di bawah ini.
                         </p>
                       </div>
                       <a
-                        href="https://wa.me/6281234567890?text=Halo%20Tim%20CUBIC%2C%20saya%20ingin%20menyampaikan%20masukan%3A%20"
+                        href="https://wa.me/6281234567890?text=Halo%20Tim%20CUBA%2C%20saya%20ingin%20menyampaikan%20masukan%3A%20"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
@@ -407,7 +491,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                         <span>Kirim Saran via WhatsApp</span>
                       </a>
                       <div className="text-center">
-                        <p className="text-[9px] text-slate-400 font-semibold">Versi Aplikasi: CUBIC v4.0</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">Versi Aplikasi: CUBA v4.0</p>
                         <p className="text-[9px] text-slate-400 font-semibold">Akun: {props.googleEmail || props.kasirName}</p>
                       </div>
                     </div>
@@ -415,65 +499,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                 )}
               </AnimatePresence>
 
-            {/* PENGUMUMAN & TEKS BERJALAN - OWNER ONLY */}
-            {props.kasirRole === 'owner' && (
-              <div className="mt-3 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <button
-                  onClick={() => toggleSection('pengumuman')}
-                  className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0">
-                      <MessageSquare size={18} />
-                    </div>
-                    <div>
-                      <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">PENGUMUMAN &amp; TEKS IKLAN</span>
-                      <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Atur teks berjalan &amp; pengumuman beranda</span>
-                    </div>
-                  </div>
-                  {openSection === 'pengumuman' ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
-                </button>
-                <AnimatePresence>
-                  {openSection === 'pengumuman' && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden border-t border-slate-100"
-                    >
-                      <div className="p-5 space-y-4 bg-slate-50">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Pengumuman Terbatas</label>
-                          <input
-                            type="text"
-                            value={announcementInput}
-                            onChange={e => setAnnouncementInput(e.target.value)}
-                            className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-xs font-bold text-slate-800"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1 block">Teks Berjalan / Iklan</label>
-                          <p className="text-[9px] text-slate-400 font-semibold pl-1">Tulis setiap teks iklan di baris baru (maks. 15 baris)</p>
-                          <textarea
-                            rows={15}
-                            value={textsRaw}
-                            onChange={e => setTextsRaw(e.target.value)}
-                            placeholder={Array.from({length: 15}, (_, i) => `Info ${i + 1}`).join('\n')}
-                            className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-[11px] text-slate-800 font-semibold leading-relaxed resize-none"
-                          />
-                        </div>
-                        <button 
-                          onClick={handleSaveAnnouncements}
-                          className="w-full py-3.5 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
-                        >
-                          <Save size={16} /> SIMPAN PERUBAHAN
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+
           </div>
 
           <div className="pt-2 pb-6 space-y-4">

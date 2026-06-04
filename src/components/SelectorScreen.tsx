@@ -1,27 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { supabase } from '../lib/supabase'
+import type { LicenseStatus } from '../lib/license'
 import type { Store } from '../types'
-import { CubicLogo } from './CubicLogo'
-import { Store as StoreIcon, Shield, Plus, LogOut, ChevronRight, User, ShieldCheck } from 'lucide-react'
+import { CubaLogo } from './CubaLogo'
+import { Store as StoreIcon, Shield, Plus, LogOut, ChevronRight, User, ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 interface SelectorScreenProps {
   googleUid: string
   googleEmail?: string
   onSelectRole: (role: 'owner' | 'kasir', storeId: string | 'all', store?: Store) => void
   onLogoutGoogle: () => void
+  appLicenseStatus: LicenseStatus | null
 }
 
 export const SelectorScreen: React.FC<SelectorScreenProps> = ({
   googleUid,
   googleEmail,
   onSelectRole,
-  onLogoutGoogle
+  onLogoutGoogle,
+  appLicenseStatus
 }) => {
   const [stores, setStores] = useState<Store[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false)
   const [newStoreName, setNewStoreName] = useState<string>('')
+  const isLimitReached = stores.length >= 1 && (!appLicenseStatus || appLicenseStatus.state === 'TRIAL' || ('packageType' in appLicenseStatus && (appLicenseStatus.packageType === 'STARTER' || appLicenseStatus.packageType === 'BRONZE')));
   const [newStoreSubtext, setNewStoreSubtext] = useState<string>('')
   
   const fetchStores = async () => {
@@ -44,7 +48,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
             .from('stores')
             .insert({
               user_id: googleUid,
-              name: 'KASIR CUBIC',
+              name: 'Kasir Cuba',
               subtext: 'Toko Bawaan / Demo Aplikasi',
               photo_url: ''
             })
@@ -117,16 +121,87 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
     }
   }
 
+  const [storeToEdit, setStoreToEdit] = useState<Store | null>(null)
+  const [editStoreName, setEditStoreName] = useState('')
+  const [editStoreSubtext, setEditStoreSubtext] = useState('')
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  const [storeToDelete, setStoreToDelete] = useState<Store | null>(null)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+
+  const [isOwnerPinModalOpen, setIsOwnerPinModalOpen] = useState(false)
+  const [ownerPinInput, setOwnerPinInput] = useState('')
+  const [ownerPinError, setOwnerPinError] = useState('')
+  const [showOwnerPin, setShowOwnerPin] = useState(false)
+
+  const handleOwnerClick = () => {
+    const isEnabled = localStorage.getItem('alphaPro_owner_pin_enabled') !== 'false'
+    if (isEnabled) {
+      setIsOwnerPinModalOpen(true)
+    } else {
+      onSelectRole('owner', 'all')
+    }
+  }
+
+  const handleOwnerLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const currentPin = localStorage.getItem('alphaPro_owner_pin') || '0000'
+    if (ownerPinInput === currentPin) {
+      setIsOwnerPinModalOpen(false)
+      setOwnerPinInput('')
+      setOwnerPinError('')
+      onSelectRole('owner', 'all')
+    } else {
+      setOwnerPinError('PIN Owner Salah!')
+      setOwnerPinInput('')
+    }
+  }
+
+  const handleEditStore = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!storeToEdit || !editStoreName.trim()) return
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ name: editStoreName.trim(), subtext: editStoreSubtext.trim() })
+        .eq('id', storeToEdit.id)
+      
+      if (error) throw error
+      
+      setStores(prev => prev.map(s => s.id === storeToEdit.id ? { ...s, name: editStoreName.trim(), subtext: editStoreSubtext.trim() } : s))
+      setIsEditModalOpen(false)
+      setStoreToEdit(null)
+    } catch (err) {
+      console.error('Error updating store:', err)
+      alert('Gagal mengubah data toko.')
+    }
+  }
+
+  const handleDeleteStore = async () => {
+    if (!storeToDelete) return
+    try {
+      const { error } = await supabase.from('stores').delete().eq('id', storeToDelete.id)
+      if (error) throw error
+      
+      setStores(prev => prev.filter(s => s.id !== storeToDelete.id))
+      setIsDeleteConfirmOpen(false)
+      setStoreToDelete(null)
+    } catch (err) {
+      console.error('Error deleting store:', err)
+      alert('Gagal menghapus toko.')
+    }
+  }
+
   return (
     <div className="min-h-screen font-sans w-full bg-slate-50 flex flex-col pt-6 pb-6 px-3 sm:px-4 min-h-[100dvh] overflow-y-auto hide-scrollbar">
       <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl relative border border-slate-100 flex-shrink-0 mt-auto mx-auto">
         <div className="p-5 sm:p-8 pb-5">
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-6 sm:mb-8 text-center sm:text-left">
-            <CubicLogo size={14} className="scale-100" />
+            <CubaLogo size={14} className="scale-100" />
             <div>
-              <h1 className="text-2xl font-black flex items-center gap-1.5"><span className="text-slate-900 tracking-tight">CUBIC</span> <span className="text-blue-600 tracking-tight">Cloud</span></h1>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">MULTI-STORE SWITCHER</p>
+              <h1 className="text-2xl font-black flex items-center gap-1.5"><span className="text-slate-900 tracking-tight">Kasir</span> <span className="text-blue-600 tracking-tight">Cuba</span></h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Pembukuan Kasir Agen</p>
             </div>
           </div>
 
@@ -137,7 +212,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
                 CENTRAL DASHBOARD
               </span>
               <button 
-                onClick={() => onSelectRole('owner', 'all')}
+                onClick={handleOwnerClick}
                 className="w-full bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-left p-4 rounded-2xl sm:rounded-3xl transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] active:scale-95 flex items-center gap-3 relative overflow-hidden group"
               >
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/20 shrink-0 relative z-10 text-white group-hover:bg-white/10 transition-colors">
@@ -167,14 +242,23 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
                 <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.1em]">
                   PILIH TOKO ({stores.length})
                 </span>
-                <button 
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:text-blue-800 tracking-widest transition-colors"
-                >
-                  <Plus size={12} strokeWidth={3} /> TAMBAH TOKO
-                </button>
-              </div>
+                {isLimitReached ? (
+                  <button 
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 cursor-not-allowed tracking-widest"
+                    title="Batas maksimal toko tercapai untuk paket Anda. Upgrade lisensi untuk menambah toko."
+                  >
+                    <AlertCircle size={12} strokeWidth={3} /> MAKSIMAL 1 TOKO
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:text-blue-800 tracking-widest transition-colors"
+                  >
+                    <Plus size={12} strokeWidth={3} /> TAMBAH TOKO
+                  </button>
+                )}
 
+              </div>
               <div className="space-y-3">
                 {loading ? (
                   <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-3">
@@ -188,24 +272,43 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
                   </div>
                 ) : (
                   stores.map(store => (
-                    <button
+                    <div
                       key={store.id}
-                      onClick={() => onSelectRole('kasir', store.id, store)}
-                      className="w-full bg-white hover:bg-slate-50 border border-slate-200 p-3 rounded-2xl transition-all shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] active:scale-95 flex items-center justify-between gap-3 text-left group"
+                      className="w-full bg-white hover:bg-slate-50 border border-slate-200 p-3 rounded-2xl transition-all shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-2 group"
                     >
-                      <div className="flex items-center gap-4 min-w-0 flex-1">
-                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue-100 transition-colors">
-                          <StoreIcon size={20} strokeWidth={2.5} />
-                        </div>
-                        <div className="min-w-0 flex-1 pr-4">
-                          <p className="text-[15px] font-black text-slate-800 leading-none uppercase truncate tracking-wide">{store.name}</p>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase mt-1.5 tracking-wider truncate">
-                            {store.subtext || 'PEMBUKUAN AGEN BRILINK & KONTER'}
-                          </p>
+                      <div className="flex items-center justify-between gap-3 text-left">
+                        <button 
+                          onClick={() => onSelectRole('kasir', store.id, store)}
+                          className="flex items-center gap-4 min-w-0 flex-1 active:scale-95 text-left"
+                        >
+                          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue-100 transition-colors">
+                            <StoreIcon size={20} strokeWidth={2.5} />
+                          </div>
+                          <div className="min-w-0 flex-1 pr-4">
+                            <p className="text-[15px] font-black text-slate-800 leading-none uppercase truncate tracking-wide">{store.name}</p>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase mt-1.5 tracking-wider truncate">
+                              {store.subtext || 'PEMBUKUAN AGEN BRILINK & KONTER'}
+                            </p>
+                          </div>
+                        </button>
+                        <div className="flex flex-col gap-1.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setStoreToEdit(store); setEditStoreName(store.name); setEditStoreSubtext(store.subtext || ''); setIsEditModalOpen(true); }} 
+                            className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center transition-colors shadow-sm"
+                            title="Edit Toko"
+                          >
+                            <i className="fa-solid fa-pen text-[10px]"></i>
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setStoreToDelete(store); setIsDeleteConfirmOpen(true); }} 
+                            className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors shadow-sm"
+                            title="Hapus Toko"
+                          >
+                            <i className="fa-solid fa-trash text-[10px]"></i>
+                          </button>
                         </div>
                       </div>
-                      <ChevronRight className="text-slate-300 shrink-0 group-hover:text-blue-500 transition-colors" size={20} strokeWidth={2.5} />
-                    </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -237,7 +340,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
             </button>
             
             <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-[0.2em] mt-8">
-              KASIR CUBIC &bull; CLOUD SYNC MULTI-TENANT
+              KASIR CUBA &bull; Pembukuan Kasir Agen
             </p>
           </div>
         </div>
@@ -309,6 +412,203 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
                     className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md"
                   >
                     DAFTAR SEKARANG
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL EDIT TOKO */}
+        {isEditModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl border border-slate-100"
+            >
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+                <i className="fa-solid fa-pen text-lg"></i>
+              </div>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">
+                EDIT TOKO
+              </h3>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-6">
+                Ubah nama atau keterangan layanan toko
+              </p>
+
+              <form onSubmit={handleEditStore} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-1">
+                    Nama Toko / Agen
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: TOKO1"
+                    value={editStoreName}
+                    onChange={e => setEditStoreName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-slate-800 uppercase font-black focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-1">
+                    Keterangan Layanan
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: PEMBUKUAN AGEN BRILINK & KONTER"
+                    value={editStoreSubtext}
+                    onChange={e => setEditStoreSubtext(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-slate-800 uppercase font-black focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-2 w-full">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditModalOpen(false); setStoreToEdit(null); }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md"
+                  >
+                    SIMPAN
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL HAPUS TOKO */}
+        {isDeleteConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white rounded-[2rem] p-6 w-full max-w-xs shadow-2xl border border-slate-100 text-center"
+            >
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                <i className="fa-solid fa-triangle-exclamation text-2xl"></i>
+              </div>
+              <h3 className="text-[14px] font-black text-slate-800 uppercase tracking-widest mb-1.5">
+                Hapus Toko?
+              </h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-6">
+                Toko <strong className="text-red-500">{storeToDelete?.name}</strong> akan dihapus permanen beserta seluruh data di dalamnya!
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setIsDeleteConfirmOpen(false); setStoreToDelete(null); }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDeleteStore}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-red-500/20"
+                >
+                  Yakin, Hapus
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL PIN OWNER */}
+        {isOwnerPinModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl border border-slate-100"
+            >
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+                <ShieldCheck size={20} />
+              </div>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">
+                PIN KEAMANAN OWNER
+              </h3>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-6">
+                Masukkan PIN untuk masuk ke panel utama
+              </p>
+
+              <form onSubmit={handleOwnerLoginSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block px-1">
+                    PIN Owner
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showOwnerPin ? "text" : "password"}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      required
+                      placeholder="••••••"
+                      value={ownerPinInput}
+                      onChange={e => {
+                        setOwnerPinInput(e.target.value)
+                        setOwnerPinError('')
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-sm tracking-widest text-slate-800 uppercase font-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOwnerPin(!showOwnerPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 p-1"
+                    >
+                      {showOwnerPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {ownerPinError && (
+                  <div className="flex items-center gap-2 bg-red-50 text-red-600 text-xs font-bold p-3 rounded-xl border border-red-100">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{ownerPinError}</span>
+                  </div>
+                )}
+
+                <div className="pt-4 flex gap-2 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOwnerPinModalOpen(false)
+                      setOwnerPinInput('')
+                      setOwnerPinError('')
+                    }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md"
+                  >
+                    MASUK PANEL
                   </button>
                 </div>
               </form>

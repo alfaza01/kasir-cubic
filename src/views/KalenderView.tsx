@@ -268,10 +268,10 @@ export const KalenderView: React.FC<KalenderViewProps> = (props) => {
       </div>
 
       {/* Grid: Calendar + Date Notes */}
-      <div className={cn("flex-1 grid grid-cols-1 md:grid-cols-12 gap-6", props.isPc ? "overflow-hidden pb-14" : "pb-6")}>
+      <div className={cn("flex-1 grid gap-6", props.isPc ? "grid-cols-12 overflow-hidden pb-14" : "grid-cols-1 pb-6")}>
         
         {/* Calendar Box (Left) */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 md:col-span-7 flex flex-col h-fit">
+        <div className={cn("bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col h-fit", props.isPc && "col-span-7")}>
           {/* Calendar Header with controller */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -389,7 +389,7 @@ export const KalenderView: React.FC<KalenderViewProps> = (props) => {
         </div>
 
         {/* Schedule/Notes list (Right) */}
-        <div className={cn("md:col-span-5 flex flex-col", props.isPc ? "overflow-hidden h-full" : "h-auto")}>
+        <div className={cn("flex flex-col", props.isPc ? "col-span-5 overflow-hidden h-full" : "h-auto")}>
           {selectedHoliday && (
             <div className={`mb-3 p-3 text-center rounded-xl border ${selectedHoliday.isCutiBersama ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
               <p className="text-[8px] font-black uppercase tracking-wider mb-0.5">

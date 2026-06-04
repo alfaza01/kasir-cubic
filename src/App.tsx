@@ -33,6 +33,7 @@ import NotaView from './views/NotaView'
 import OtomatisView from './views/OtomatisView'
 import AdminView from './views/AdminView'
 import LicenseScreen from './components/LicenseScreen'
+import { checkAppLicenseStatus, type LicenseStatus } from './lib/license'
 
 declare global {
   namespace JSX {
@@ -61,6 +62,14 @@ const App: React.FC = () => {
   const [currentUsername, setCurrentUsername] = useState(hasBypass ? 'demo_owner' : '')
   const [currentAccount, setCurrentAccount] = useState<KasirAccount | null>(hasBypass ? { name: 'Demo Owner', role: 'owner', pin: '1234' } : null)
   const [kasirList, setKasirList] = useState<Record<string, KasirAccount>>({})
+
+  const [appLicenseStatus, setAppLicenseStatus] = useState<LicenseStatus | null>(null)
+  useEffect(() => {
+    const check = () => setAppLicenseStatus(checkAppLicenseStatus())
+    check()
+    const interval = setInterval(check, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Check Supabase Auth
   useEffect(() => {
@@ -325,41 +334,33 @@ const App: React.FC = () => {
 
   // ── Show Selector Screen if role not selected ──
   if (!selectedRole) {
-    const isLicenseRequired = false;
-
-    const hasActiveLicense = (() => {
-      try {
-        const activeString = localStorage.getItem('cubic_license_active');
-        if (activeString) {
-          const active = JSON.parse(activeString);
-          if (active.expiresAt && new Date(active.expiresAt) < new Date()) {
-            localStorage.removeItem('cubic_license_active');
-            return false;
-          }
-          return true;
-        }
-      } catch (e) {}
-      return false;
-    })();
-
-    if (isLicenseRequired && !hasActiveLicense) {
-      return (
-        <LicenseScreen 
-          onValid={() => {
-            window.location.reload();
-          }} 
-        />
-      );
-    }
-
     return (
       <SelectorScreen 
         googleUid={googleSession.user.id} 
         googleEmail={googleSession.user.email} 
         onSelectRole={handleSelectRole} 
-        onLogoutGoogle={handleLogoutGoogle} 
+        onLogoutGoogle={handleLogoutGoogle}
+        appLicenseStatus={appLicenseStatus}
       />
     )
+  }
+
+  // ── LOCK KASIR IF EXPIRED ──
+  if (appLicenseStatus?.state === 'EXPIRED' && selectedRole === 'kasir') {
+    return (
+      <div className="relative w-screen h-screen">
+        <button 
+          onClick={handleExitStore} 
+          className="absolute top-4 right-4 z-[9999] bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-red-600 border border-red-100 hover:bg-red-50 transition-all shadow-md"
+        >
+          {isLoggedIn ? 'Logout Kasir' : 'Kembali'}
+        </button>
+        <LicenseScreen 
+          onValid={() => setAppLicenseStatus(checkAppLicenseStatus())} 
+          onSecretTap={() => window.location.hash = '#/admin'}
+        />
+      </div>
+    );
   }
 
   // ── Show Profile Selection (Kasir) if not logged in ──
@@ -400,6 +401,7 @@ const App: React.FC = () => {
         setCurrentUsername(uname)
         setCurrentAccount(acc)
       }}
+      appLicenseStatus={appLicenseStatus}
     />
   )
 }
@@ -421,6 +423,7 @@ interface MainAppProps {
   activeRole: 'owner' | 'kasir'
   activeStore: Store | null
   onUpdateActiveCashier: (username: string, account: KasirAccount) => void
+  appLicenseStatus: LicenseStatus | null
 }
 
 const MainApp: React.FC<MainAppProps> = ({ 
@@ -436,7 +439,8 @@ const MainApp: React.FC<MainAppProps> = ({
   activeStoreId,
   activeRole,
   activeStore,
-  onUpdateActiveCashier
+  onUpdateActiveCashier,
+  appLicenseStatus
 }) => {
 
   // PWA Update State
@@ -450,7 +454,6 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Navigation State
   const [activeView, setActiveView] = useState('view-beranda')
-
   // ── Multi-Store States & Derived Store Info ──
   const [pantauStoreId, setPantauStoreId] = useState<string>('')
   const [stores, setStores] = useState<Store[]>([])
@@ -490,12 +493,7 @@ const MainApp: React.FC<MainAppProps> = ({
       const hash = window.location.hash.replace('#/', '')
       if (hashToView[hash]) {
         const view = hashToView[hash];
-        if (view === 'view-admin' && Capacitor.getPlatform() !== 'web') {
-          setActiveView('view-beranda');
-          window.location.hash = '#/beranda';
-        } else {
-          setActiveView(view);
-        }
+        setActiveView(view);
       } else if (hash === '' || hash === '/') {
         setActiveView('view-beranda')
       }
@@ -581,7 +579,7 @@ const MainApp: React.FC<MainAppProps> = ({
   })
   const [mainAnnouncement, setMainAnnouncement] = useState<string>(() => {
     const key = activeStoreId !== 'all' ? `alphaPro_${activeStoreId}_mainAnnouncement` : 'alphaPro_mainAnnouncement'
-    return localStorage.getItem(key) || 'Selamat Datang di APLIKASI CUBIC'
+    return localStorage.getItem(key) || 'Selamat Datang di Kasir Cuba'
   })
 
   // Presets Otomatis State
@@ -610,7 +608,7 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [googleUid, activeStoreId])
 
-  const [storeName, setStoreName] = useState('APLIKASI CUBIC')
+  const [storeName, setStoreName] = useState('Kasir Cuba')
   const [storeSubtext, setStoreSubtext] = useState('Pembukuan Agen brilink & Konter')
   const [storePhoto, setStorePhoto] = useState('')
   const [continueSaldo, setContinueSaldo] = useState<boolean>(false)
@@ -714,7 +712,7 @@ const MainApp: React.FC<MainAppProps> = ({
       setKasirList({})
       setPresets([])
       setRunningTexts(Array(15).fill(''))
-      setMainAnnouncement('Selamat Datang di APLIKASI CUBIC')
+      setMainAnnouncement('Selamat Datang di Kasir Cuba')
       return
     }
     
@@ -858,12 +856,12 @@ const MainApp: React.FC<MainAppProps> = ({
         setKasirList({})
         setPresets([])
         setRunningTexts(Array(15).fill(''))
-        setMainAnnouncement('Selamat Datang di APLIKASI CUBIC')
+        setMainAnnouncement('Selamat Datang di Kasir Cuba')
       } else {
         try { const lk = localStorage.getItem(`alphaPro_${targetStoreId}_kasir_list`); setKasirList(lk ? JSON.parse(lk) : {}); } catch(e){}
         try { const lp = localStorage.getItem(`alphaPro_${googleUid}_${targetStoreId}_presets`); setPresets(lp ? JSON.parse(lp) : []); } catch(e){}
         try { const lr = localStorage.getItem(`alphaPro_${targetStoreId}_runningTexts`); setRunningTexts(lr ? JSON.parse(lr) : Array(15).fill('')); } catch(e){}
-        setMainAnnouncement(localStorage.getItem(`alphaPro_${targetStoreId}_mainAnnouncement`) || 'Selamat Datang di APLIKASI CUBIC')
+        setMainAnnouncement(localStorage.getItem(`alphaPro_${targetStoreId}_mainAnnouncement`) || 'Selamat Datang di Kasir Cuba')
       }
 
       handleDownloadFromCloud(true)
@@ -2023,11 +2021,23 @@ const MainApp: React.FC<MainAppProps> = ({
     saldoLaciKasir: totalSaldoKas,
     saldoBank: totalSaldoBank
   } = todayStats;
-
   const kasLainnya = totalKhusus + totalNonTunai;
+
+  
 
   return (
     <div className={cn("app-container", `theme-${theme}`, screenSize !== 'auto' && screenSize)}>
+      {appLicenseStatus?.state === 'TRIAL' && (
+        <div 
+          onClick={() => setActiveView('view-admin')}
+          className={cn(
+            "bg-red-600 text-white text-[10px] font-black uppercase tracking-widest text-center py-2 z-[9999] shadow-md shrink-0 cursor-pointer w-full",
+            screenSize === 'pc' ? "absolute top-0 left-0 right-0" : ""
+          )}
+        >
+          MASA PERCOBAAN TERSISA {appLicenseStatus.daysLeft} HARI - KLIK KELOLA LISENSI
+        </div>
+      )}
       {screenSize === 'pc' && (
         <SidebarPC 
           activeView={activeView} 
@@ -2343,14 +2353,6 @@ const MainApp: React.FC<MainAppProps> = ({
                     />
                   );
                 case 'view-admin':
-                  if (Capacitor.getPlatform() !== 'web') {
-                    return (
-                      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-900 text-slate-100 font-bold uppercase tracking-wider h-full">
-                        <i className="fa-solid fa-ban text-red-500 text-4xl mb-4"></i>
-                        Akses Ditolak (Khusus Browser PC)
-                      </div>
-                    );
-                  }
                   return (
                     <AdminView
                       active={true}
@@ -2640,13 +2642,11 @@ const MainApp: React.FC<MainAppProps> = ({
             activeStoreId={targetStoreId}
           />
 
-          {Capacitor.getPlatform() === 'web' && (
-            <AdminView 
+          <AdminView 
               active={activeView === 'view-admin'} 
               isPc={screenSize === 'pc'} 
               setActiveView={setActiveView} 
             />
-          )}
 
           {!(activeRole === 'owner' && !pantauStoreId) && (
             <Navigation activeView={activeView} setActiveView={setActiveView} />
@@ -2665,6 +2665,7 @@ const MainApp: React.FC<MainAppProps> = ({
         kasirName={account.name}
         storeName={storeName}
         storeSubtext={storeSubtext}
+        onLogout={() => setShowLogoutConfirm(true)}
       />
 
 

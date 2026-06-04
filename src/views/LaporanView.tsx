@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { formatRupiah, formatInputRupiah, cn, calculateDailyStats } from '../lib/utils'
 import type { Transaction } from '../types'
 
-import { CubicLogo } from '../components/CubicLogo'
+import { CubaLogo } from '../components/CubaLogo'
 
 interface LaporanViewProps {
   active: boolean
@@ -248,7 +248,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         pdf.setTextColor(255, 255, 255);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(16);
-        pdf.text((props.storeName || 'APLIKASI CUBIC').toUpperCase(), 15, y + 9);
+        pdf.text((props.storeName || 'Kasir Cuba').toUpperCase(), 15, y + 9);
         
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8.5);
@@ -523,11 +523,18 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         const selisih = realToUse - props.saldoBank;
         
         const totalPenambahanSaldo = props.transactions
-          .filter(t => (t.kategori.startsWith('Isi') && !t.kategori.includes('Aplikasi')) || t.kategori.startsWith('Tambah'))
+          .filter(t => {
+            const kat = t.kategori || '';
+            const ket = (t.keterangan || '').toUpperCase();
+            if (kat.startsWith('Isi') && !kat.includes('Real Aplikasi')) return true;
+            if (kat.startsWith('Tambah')) return true;
+            if (kat === 'Operan Shift' && ket.includes('TERIMA')) return true;
+            return false;
+          })
           .reduce((s, t) => s + t.nominal, 0);
         
-        drawPDFJurnalRow('1. Sisa Aset Digital (Buku)', 'Total Saldo Aset Digital Tersisa', props.saldoBank);
-        drawPDFJurnalRow('2. Total Penambahan Saldo', 'Modal Pagi + Suntik Modal', totalPenambahanSaldo);
+        drawPDFJurnalRow('1. Total Saldo Masuk Hari Ini', 'Modal Pagi + Oper Shift + Suntik Saldo', totalPenambahanSaldo);
+        drawPDFJurnalRow('2. Sisa Aset Digital (Buku)', 'Total Saldo Aset Digital Tersisa', props.saldoBank);
         drawPDFJurnalRow('3. Aset Digital Real App (HP)', "Input menu 'Aset Digital'", hasInputSaldoReal ? props.saldoReal : props.saldoBank);
         
         // Adjust Status box Y position (since box is smaller)
@@ -583,9 +590,9 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         pdf.setFont('helvetica', 'italic');
         pdf.setFontSize(7.5);
         pdf.setTextColor(140, 140, 140);
-        pdf.text('Dokumen ini dibuat otomatis oleh Aplikasi APLIKASI CUBIC dan sah sebagai rekapitulasi keuangan.', 105, 285, { align: 'center' });
+        pdf.text('Dokumen ini dibuat otomatis oleh Aplikasi Kasir Cuba dan sah sebagai rekapitulasi keuangan.', 105, 285, { align: 'center' });
         
-        const fileName = `Laporan_Cubic_${props.filterTanggal}.pdf`;
+        const fileName = `Laporan_Cuba_${props.filterTanggal}.pdf`;
         
         if (type === 'download-pdf') {
           pdf.save(fileName);
@@ -601,7 +608,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
               directory: Directory.Cache
             });
             await Share.share({
-              title: 'Laporan Cubic Cell',
+              title: 'Laporan Cuba Cell',
               text: `Laporan keuangan tanggal ${props.filterTanggal}`,
               files: [result.uri],
               dialogTitle: 'Bagikan Laporan PDF'
@@ -614,7 +621,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
       } else if (type === 'share-wa-text') {
         const lines = [
           `*LAPORAN KEUANGAN HARIAN*`,
-          `*${(props.storeName || 'APLIKASI CUBIC').toUpperCase()}*`,
+          `*${(props.storeName || 'Kasir Cuba').toUpperCase()}*`,
           `_${props.storeSubtext || 'Pembukuan Agen brilink & Konter'}_`,
           `==================================`,
           `📅 *Tanggal:* ${props.filterTanggal}`,
@@ -674,13 +681,20 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         const selisih = realToUse - props.saldoBank;
 
         const totalPenambahanSaldo = props.transactions
-          .filter(t => (t.kategori.startsWith('Isi') && !t.kategori.includes('Aplikasi')) || t.kategori.startsWith('Tambah'))
+          .filter(t => {
+            const kat = t.kategori || '';
+            const ket = (t.keterangan || '').toUpperCase();
+            if (kat.startsWith('Isi') && !kat.includes('Real Aplikasi')) return true;
+            if (kat.startsWith('Tambah')) return true;
+            if (kat === 'Operan Shift' && ket.includes('TERIMA')) return true;
+            return false;
+          })
           .reduce((s, t) => s + t.nominal, 0);
 
         lines.push(`==================================`);
         lines.push(`⚖️ *JURNAL PENYESUAIAN SALDO*`);
-        lines.push(`• 1. Sisa Aset Digital (Buku): ${formatRupiah(props.saldoBank)}`);
-        lines.push(`• 2. Total Penambahan Saldo: ${formatRupiah(totalPenambahanSaldo)}`);
+        lines.push(`• 1. Total Saldo Masuk Hari Ini: ${formatRupiah(totalPenambahanSaldo)}`);
+        lines.push(`• 2. Sisa Aset Digital (Buku): ${formatRupiah(props.saldoBank)}`);
         lines.push(`• 3. Aset Real HP: ${hasInputSaldoReal ? formatRupiah(props.saldoReal) : '-'}`);
         
         let statusStr = '';
@@ -691,7 +705,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         
         lines.push(`👉 *STATUS:* *${statusStr}*`);
         lines.push(`==================================`);
-        lines.push(`_Dicetak via Aplikasi APLIKASI CUBIC_`);
+        lines.push(`_Dicetak via Aplikasi Kasir Cuba_`);
 
         const text = lines.join('\n');
 
@@ -749,7 +763,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
         csvContent += `"Voucher Tunai",${totalUangKeseluruhan - totalUangQris}\n`;
         csvContent += `"Voucher QRIS",${totalUangQris}\n`;
         
-        const fileName = `Laporan_Cubic_${props.filterTanggal}.csv`;
+        const fileName = `Laporan_Cuba_${props.filterTanggal}.csv`;
         try {
           const { Share } = await import('@capacitor/share');
           const { Filesystem, Directory } = await import('@capacitor/filesystem');
@@ -760,7 +774,7 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
             directory: Directory.Cache
           });
           await Share.share({
-            title: 'Laporan Cubic Cell',
+            title: 'Laporan Cuba Cell',
             text: `Data Laporan Excel (CSV) tanggal ${props.filterTanggal}`,
             files: [result.uri],
             dialogTitle: 'Bagikan Laporan Excel'
@@ -1004,27 +1018,36 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-2.5 bg-blue-50/50 dark:bg-blue-950/30 rounded-2xl border-2 border-blue-100 dark:border-blue-900/50">
-                <div>
-                  <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-tight">1. Sisa Aset Digital (Buku)</p>
-                  <p className="text-[9px] text-slate-400 font-medium italic -mt-0.5">Total Saldo Aset Digital Tersisa</p>
-                </div>
-                <span className="font-black text-xs text-blue-900 dark:text-white">{formatRupiah(props.saldoBank)}</span>
-              </div>
-
-              <div className="flex flex-col gap-2 p-3 bg-amber-50/20 dark:bg-amber-950/20 rounded-[2rem] border border-amber-100/60 dark:border-amber-900/30 shadow-inner">
+              {/* ITEM 1: Total Saldo Masuk - menonjol dengan gradient oranye */}
+              <div className="flex flex-col gap-2 p-3.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl border border-orange-400 shadow-lg shadow-orange-500/25">
                 <div className="flex justify-between items-center px-1">
                   <div>
-                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-tight">2. Total Penambahan Saldo</p>
-                    <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium italic -mt-0.5">Modal Pagi + Suntik Modal</p>
+                    <p className="text-[11px] font-black text-white uppercase tracking-wide drop-shadow-sm">1. Total Saldo Masuk Hari Ini</p>
+                    <p className="text-[9px] text-orange-100 font-bold mt-0.5 whitespace-nowrap">Modal Pagi + Oper Shift + Suntik Saldo</p>
                   </div>
-                  <span className="font-black text-xs text-amber-900 dark:text-amber-100">{(() => {
+                  <span className="font-black text-[13px] text-orange-800 bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-md">{(() => {
                     const penambahan = props.transactions
-                      .filter(t => (t.kategori.startsWith('Isi') && !t.kategori.includes('Aplikasi')) || t.kategori.startsWith('Tambah'))
+                      .filter(t => {
+                        const kat = t.kategori || '';
+                        const ket = (t.keterangan || '').toUpperCase();
+                        if (kat.startsWith('Isi') && !kat.includes('Real Aplikasi')) return true;
+                        if (kat.startsWith('Tambah')) return true;
+                        if (kat === 'Operan Shift' && ket.includes('TERIMA')) return true;
+                        return false;
+                      })
                       .reduce((s, t) => s + t.nominal, 0);
                     return formatRupiah(penambahan);
                   })()}</span>
                 </div>
+              </div>
+
+              {/* ITEM 2: Sisa Aset Digital */}
+              <div className="flex justify-between items-center p-2.5 bg-blue-50/50 dark:bg-blue-950/30 rounded-2xl border-2 border-blue-100 dark:border-blue-900/50">
+                <div>
+                  <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-tight">2. Sisa Aset Digital (Buku)</p>
+                  <p className="text-[9px] text-slate-400 font-medium italic -mt-0.5">Total Saldo Aset Digital Tersisa</p>
+                </div>
+                <span className="font-black text-xs text-blue-900 dark:text-white">{formatRupiah(props.saldoBank)}</span>
               </div>
 
               <div className="flex flex-col gap-2 p-3 bg-emerald-50/20 dark:bg-emerald-950/20 rounded-[2rem] border border-emerald-100/60 dark:border-emerald-900/30 shadow-inner">
@@ -1162,16 +1185,12 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
                   <span className="text-[11px] font-bold text-pink-700 dark:text-pink-400 flex items-center gap-2"><i className="fa-solid fa-headphones text-[10px]"></i> Aksesoris (Non Tunai)</span>
                   <span className="font-black text-xs text-pink-600 dark:text-pink-400">{formatRupiah(totalAksesorisNonTunai)}</span>
                 </div>
-                <div className="flex justify-between items-center bg-fuchsia-50/50 dark:bg-fuchsia-950/20 px-3 py-2 rounded-xl border border-fuchsia-100/50 dark:border-fuchsia-900/30">
-                  <span className="text-[11px] font-bold text-fuchsia-700 dark:text-fuchsia-400 flex items-center gap-2"><i className="fa-solid fa-star text-[10px]"></i> Khusus</span>
-                  <span className="font-black text-xs text-fuchsia-600 dark:text-fuchsia-400">{formatRupiah(totalKhusus)}</span>
-                </div>
               </div>
             </div>
             
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
               <span className="text-[10px] font-black text-slate-400 uppercase">Total Lainnya</span>
-              <span className="text-sm font-black text-purple-600">{formatRupiah(totalNonTunai + totalKhusus + totalAksesorisNonTunai)}</span>
+              <span className="text-sm font-black text-purple-600">{formatRupiah(totalNonTunai + totalAksesorisNonTunai)}</span>
             </div>
           </div>
         </div>
@@ -1260,10 +1279,10 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
               {props.storePhoto ? (
                 <img src={props.storePhoto} alt="Logo" className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md" />
               ) : (
-                <CubicLogo size={12} className="w-12 h-12" />
+                <CubaLogo size={12} className="w-12 h-12" />
               )}
               <div>
-                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'APLIKASI CUBIC'}</h1>
+                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'Kasir Cuba'}</h1>
                 <p className="text-blue-200 text-[8px] font-bold uppercase tracking-tighter opacity-80">{props.storeSubtext || 'Pembukuan Agen brilink & Konter'}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <span className="text-white text-[10px] font-black">{props.kasirName}</span>
@@ -1535,195 +1554,15 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
                 <span className="text-[13px] font-bold text-pink-700 flex items-center gap-2"><i className="fa-solid fa-headphones text-[12px]"></i> Aksesoris (Non Tunai)</span>
                 <span className="font-black text-[14px] text-pink-600">{formatRupiah(totalAksesorisNonTunai)}</span>
               </div>
-              <div className="flex justify-between items-center bg-fuchsia-50/50 px-3 py-1 rounded-xl border border-fuchsia-100/50">
-                <span className="text-[13px] font-bold text-fuchsia-700 flex items-center gap-2"><i className="fa-solid fa-star text-[12px]"></i> Transaksi Khusus</span>
-                <span className="font-black text-[14px] text-fuchsia-600">{formatRupiah(totalKhusus)}</span>
-              </div>
               <div className="mt-2 pt-2 border-t-2 border-purple-100/50 flex justify-between items-center px-3 py-1.5 bg-purple-100/30 rounded-xl">
                 <span className="text-[13px] font-black text-purple-800 flex items-center gap-2">TOTAL KAS LAIN NYA</span>
-                <span className="font-black text-[15px] text-purple-700">{formatRupiah(totalNonTunai + totalKhusus + totalAksesorisNonTunai)}</span>
+                <span className="font-black text-[15px] text-purple-700">{formatRupiah(totalNonTunai + totalAksesorisNonTunai)}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border-2 border-indigo-100 rounded-[1.8rem] p-3.5 -mx-3 shadow-xl shadow-indigo-500/10">
-            <div className="flex justify-between items-center mb-3 px-1">
-              <h4 className="text-[13px] font-black text-indigo-800 tracking-widest uppercase flex items-center gap-1.5">
-                <i className="fa-solid fa-scale-balanced text-indigo-500"></i> JURNAL PENYESUAIAN SALDO
-              </h4>
-              <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase">Otomatis</span>
-            </div>
-            
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center p-1.5 bg-blue-50/80 rounded-xl border-2 border-blue-100">
-                <div>
-                  <p className="text-[11px] font-bold text-blue-700 uppercase tracking-tight">1. Sisa Aset Digital (Buku)</p>
-                  <p className="text-[9px] text-blue-400 font-medium italic -mt-0.5">Total Saldo Aset Digital Tersisa</p>
-                </div>
-                <span className="font-black text-[13px] text-blue-900">{formatRupiah(props.saldoBank)}</span>
-              </div>
-
-              <div className="flex flex-col gap-2.5 p-3 bg-amber-50/20 rounded-[1.8rem] border border-amber-100 dark:border-slate-800">
-                <div className="flex justify-between items-center px-1">
-                  <div>
-                    <p className="text-[11px] font-bold text-amber-700 uppercase tracking-tight">2. Total Penambahan Saldo</p>
-                    <p className="text-[9px] text-slate-400 font-medium italic -mt-0.5 whitespace-nowrap">Modal Pagi + Suntik Modal</p>
-                  </div>
-                  <span className="font-black text-[12px] text-amber-900">{(() => {
-                    const penambahan = props.transactions
-                      .filter(t => (t.kategori.startsWith('Isi') && !t.kategori.includes('Aplikasi')) || t.kategori.startsWith('Tambah'))
-                      .reduce((s, t) => s + t.nominal, 0);
-                    return formatRupiah(penambahan);
-                  })()}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2.5 p-3 bg-emerald-50/20 rounded-[1.8rem] border border-emerald-100 dark:border-slate-800">
-                <div className="flex justify-between items-center px-1">
-                  <div>
-                    <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-tight">3. Aset Real App (HP)</p>
-                    <p className="text-[9px] text-slate-400 font-medium italic -mt-0.5 whitespace-nowrap">Sisa dana di mobile banking / HP</p>
-                  </div>
-                  <span className="font-black text-[12px] text-emerald-990 bg-emerald-50 px-2 py-0.5 border border-emerald-100 rounded-full">{props.transactions.some(t => t.kategori.includes('Real Aplikasi')) ? formatRupiah(props.saldoReal) : '-'}</span>
-                </div>
-                {props.onUpdateSaldoReal && (
-                  <button
-                    onClick={() => setShowSaldoRealModal(true)}
-                    className="w-full mt-1 border-2 border-dashed border-emerald-200 hover:border-emerald-400 bg-white dark:bg-slate-900 rounded-2xl p-2.5 flex items-center justify-between shadow-sm cursor-pointer transition-all active:scale-[0.98] group text-left"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="flex items-center gap-2.5 flex-1 pr-1">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
-                        <i className="fa-solid fa-scale-balanced text-xs animate-pulse"></i>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">KLIK UNTUK INPUT SALDO HP</p>
-                        <p className="text-[11px] font-extrabold text-slate-700 leading-none truncate">
-                          {props.saldoReal > 0 ? "Revisi: " + formatRupiah(props.saldoReal) : "Isi Saldo Real Sekarang..."}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="bg-emerald-600 text-white px-2.5 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-1 shrink-0 border border-emerald-500 shadow-sm group-hover:bg-emerald-700">
-                      <i className="fa-solid fa-pen"></i> EDIT
-                    </div>
-                  </button>
-                )}
-              </div>
-
-              {(() => {
-                const hasInputSaldoReal = props.transactions.some(t => t.kategori.includes('Real Aplikasi'));
-                const realToUse = hasInputSaldoReal ? props.saldoReal : props.saldoBank; // Jika belum input, anggap sama dengan buku (selisih 0) agar tidak membingungkan
-                const selisih = realToUse - props.saldoBank;
-                
-                return (
-                  <div className={cn(
-                    "mt-3 p-3.5 -mx-1.5 rounded-2xl flex justify-between items-center border-2",
-                    !hasInputSaldoReal ? "bg-slate-50 border-slate-200 text-slate-500 shadow-sm" :
-                    selisih === 0 ? "bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-500/30" : 
-                    selisih > 0 ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/30" : "bg-rose-600 border-rose-400 text-white shadow-lg shadow-rose-500/30"
-                  )}>
-                    <div>
-                      <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                        {!hasInputSaldoReal ? <><i className="fa-solid fa-circle-question hidden"></i> STATUS: PERLU INPUT</> :
-                         selisih === 0 ? <><i className="fa-solid fa-circle-check"></i> STATUS: KLOP</> : 
-                         selisih > 0 ? <><i className="fa-solid fa-circle-exclamation"></i> STATUS: SURPLUS</> : 
-                         <><i className="fa-solid fa-circle-xmark"></i> STATUS: SELISIH</>}
-                      </p>
-                      <p className="text-[10px] sm:text-[9px] md:text-[10px] opacity-90 font-bold italic mt-0.5">
-                        {!hasInputSaldoReal ? 'Silakan input saldo real HP Anda terlebih dahulu' :
-                         selisih === 0 ? 'Sisa saldo di HP cocok dengan catatan buku' : 
-                         selisih > 0 ? 'Saldo di HP lebih besar dari catatan' : 'Saldo di HP lebih kecil (Uang kurang)'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {!hasInputSaldoReal ? (
-                        <span className="font-black text-[12px] block text-slate-400 uppercase">Input dlu ↑</span>
-                      ) : (
-                        <>
-                          <span className="font-black text-[16px] block">{selisih === 0 ? '✓ MATCH' : formatRupiah(selisih)}</span>
-                          {selisih !== 0 && <span className="text-[9px] font-black opacity-80 uppercase tracking-widest">Periksa Kembali</span>}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* MODAL UPDATE SALDO REAL APLIKASI */}
-      {showSaldoRealModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !props.isSaving && setShowSaldoRealModal(false)}></div>
-          <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative z-10 border border-slate-100 dark:border-slate-700">
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
-              <div>
-                <h3 className="font-black text-sm uppercase tracking-widest">Update Saldo Aplikasi</h3>
-                <p className="text-[10px] text-emerald-100 font-medium mt-0.5">Bisa diinput berkali-kali</p>
-              </div>
-              <button 
-                onClick={() => setShowSaldoRealModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                disabled={props.isSaving}
-              >
-                <i className="fa-solid fa-xmark text-sm"></i>
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-5">
-              <div>
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">Keterangan Aplikasi</label>
-                <div className="relative">
-                  <select 
-                    value={inputSaldoRealKeterangan}
-                    onChange={(e) => setInputSaldoRealKeterangan(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Pilih Aplikasi/Bank...</option>
-                    {getCategories().filter(id => id !== 'Bank08' && id !== 'Bank09').map(id => (
-                      <option key={id} value={getWalletName(id)}>{getWalletName(id)}</option>
-                    ))}
-                  </select>
-                  <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">Nominal Saldo</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">Rp</span>
-                  <input 
-                    type="text"
-                    inputMode="numeric"
-                    value={inputSaldoReal}
-                    onChange={(e) => setInputSaldoReal(formatInputRupiah(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-4 text-lg font-black text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  const nominal = parseInt(inputSaldoReal.replace(/\./g, '')) || 0;
-                  if (nominal <= 0) return;
-                  props.onUpdateSaldoReal?.(nominal, inputSaldoRealKeterangan);
-                  setInputSaldoReal('');
-                  setInputSaldoRealKeterangan('');
-                  setShowSaldoRealModal(false);
-                }}
-                disabled={props.isSaving || !inputSaldoReal}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all active:scale-[0.98] disabled:opacity-50 mt-2 flex justify-center items-center gap-2"
-              >
-                {props.isSaving ? <><i className="fa-solid fa-spinner fa-spin text-lg"></i> MENYIMPAN...</> : <><i className="fa-solid fa-save text-lg"></i> SIMPAN SALDO</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      </div>
     </div>
   )
 }

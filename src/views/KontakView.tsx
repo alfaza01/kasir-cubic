@@ -130,10 +130,10 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
       </div>
 
       {/* Grid: Form + List */}
-      <div className={cn("flex-1 grid grid-cols-1 md:grid-cols-3 gap-6", props.isPc ? "overflow-hidden pb-14" : "pb-6")}>
+      <div className={cn("flex-1 grid gap-6", props.isPc ? "grid-cols-3 overflow-hidden pb-14" : "grid-cols-1 pb-6")}>
         
         {/* Form Column */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit md:col-span-1">
+        <div className={cn("bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit", props.isPc && "col-span-1")}>
           <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-2">
             <Plus size={12} className="text-blue-500" />
             <span>Tambah Kontak Baru</span>
@@ -212,7 +212,7 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
         </div>
 
         {/* List Column */}
-        <div className={cn("md:col-span-2 flex flex-col", props.isPc ? "overflow-hidden h-full" : "h-auto")}>
+        <div className={cn("flex flex-col", props.isPc ? "col-span-2 overflow-hidden h-full" : "h-auto")}>
           {/* Search Box */}
           <div className="relative mb-4 shrink-0">
             <Search size={16} className="absolute left-4 top-3.5 text-slate-500" />

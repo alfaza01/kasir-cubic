@@ -54,7 +54,7 @@ class QueryChain {
       
       // Khusus untuk lisensi, buat 1 lisensi demo secara otomatis jika tabel kosong agar tidak macet
       if (this.table === 'cubic_licenses' && items.length === 0) {
-        items = [{ id: 'lic_demo', code: 'CUBIC-DEMO-2026', active: true, user_id: 'bypass-google-uid', name: 'Demo License' }]
+        items = [{ id: 'lic_demo', code: 'CUBA-DEMO-2026', active: true, user_id: 'bypass-google-uid', name: 'Demo License' }]
         localStorage.setItem(`cubic_db_cubic_licenses`, JSON.stringify(items))
       }
 

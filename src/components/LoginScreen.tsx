@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronDown, AlertCircle } from 'lucide-react'
-import { CubicLogo } from './CubicLogo'
+import { CubaLogo } from './CubaLogo'
 
 export interface KasirAccount {
   name: string
@@ -82,7 +82,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 flex flex-col items-center"
       >
         {/* App Title/Logo Header */}
-        <CubicLogo size={18} className="mb-6 scale-110" />
+        <CubaLogo size={18} className="mb-6 scale-110" />
         
         <h2 className="text-2xl font-black tracking-tight text-slate-800 uppercase leading-none mb-2">
           {storeName || 'TOKO'}
@@ -173,7 +173,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         </form>
 
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-10">
-          KASIR CUBIC v1.0
+          KASIR CUBA v1.0
         </p>
       </motion.div>
     </div>

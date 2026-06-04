@@ -59,7 +59,7 @@ export const GoogleAuthScreen: React.FC = () => {
             <i className="fa-solid fa-cloud-bolt text-3xl text-white"></i>
           </div>
           <h1 className="login-title">
-            CUBIC <span className="login-title-accent">Cloud</span>
+            CUBA <span className="login-title-accent">Cloud</span>
           </h1>
           <span className="login-subtitle">Enterprise Data Solutions</span>
           

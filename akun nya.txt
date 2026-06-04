@@ -1,0 +1,3 @@
+akun supabase = alfazafova
+akun gmail = alfazapova
+github = alfaza01

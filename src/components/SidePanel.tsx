@@ -13,6 +13,7 @@ interface SidePanelProps {
   kasirName: string
   storeName: string
   storeSubtext: string
+  onLogout: () => void
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({
@@ -25,7 +26,8 @@ const SidePanel: React.FC<SidePanelProps> = ({
   jamAbsen,
   kasirName,
   storeName,
-  storeSubtext
+  storeSubtext,
+  onLogout
 }) => {
   return (
     <AnimatePresence>
@@ -86,7 +88,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Toko</p>
-                      <p className="text-xs font-black text-slate-900 leading-tight uppercase truncate">{storeName || 'APLIKASI CUBIC'}</p>
+                      <p className="text-xs font-black text-slate-900 leading-tight uppercase truncate">{storeName || 'Kasir Cuba'}</p>
                       <p className="text-[8px] text-slate-500 font-bold uppercase mt-0.5 tracking-wider truncate">{storeSubtext || 'Agen Brilink & Konter'}</p>
                     </div>
                   </div>
@@ -110,7 +112,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
                       <Fingerprint size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Mulai Kerja</p>
+                      <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Jam Absen</p>
                       <p className="text-xs font-black text-emerald-600 leading-tight truncate">{jamAbsen || '--:--:--'}</p>
                     </div>
                   </div>
@@ -183,13 +185,26 @@ const SidePanel: React.FC<SidePanelProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-slate-200 bg-slate-50 text-center">
-              <p className="text-[7px] text-slate-500 font-extrabold uppercase tracking-[0.2em]">
-                Cubic Mobile v1.0.0
-              </p>
-              <p className="text-[6px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
-                Made for Alfaza Cell
-              </p>
+            <div className="p-5 border-t border-slate-200 bg-slate-50 flex flex-col gap-4">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onLogout();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-200 active:scale-95 shadow-sm"
+              >
+                <i className="fa-solid fa-power-off text-xs"></i>
+                <span>KELUAR KASIR</span>
+              </button>
+              
+              <div className="text-center">
+                <p className="text-[7px] text-slate-500 font-extrabold uppercase tracking-[0.2em]">
+                  Kasir Cuba v1.0.0
+                </p>
+                <p className="text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                  Made for Alfaza Cell
+                </p>
+              </div>
             </div>
           </motion.div>
         </>

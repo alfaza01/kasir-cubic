@@ -1599,7 +1599,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
       </div>
 
       {/* 6-Option Menu Tab selector */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-1 p-0.5 bg-slate-100 rounded-2xl mb-4 shrink-0 border border-slate-250 select-none">
+      <div className={cn("grid gap-1 p-0.5 bg-slate-100 rounded-2xl mb-4 shrink-0 border border-slate-250 select-none", props.isPc ? "grid-cols-6" : "grid-cols-3")}>
         {/* Toggle 1: Daftar */}
         <button
           onClick={() => setActiveTab('daftar')}
@@ -3405,7 +3405,7 @@ export const VoucherView: React.FC<VoucherViewProps> = (props) => {
           return (
             <div className="w-full max-w-4xl mx-auto flex flex-col gap-5 select-none mb-12">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className={cn("grid gap-5", props.isPc ? "grid-cols-2" : "grid-cols-1")}>
                 
                 {/* COLUMN 1: BEST SELLERS LIST */}
                 <div className="bg-white border border-slate-200 rounded-[2rem] p-5 sm:p-6 shadow-sm flex flex-col h-full">

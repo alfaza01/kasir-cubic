@@ -4,7 +4,7 @@ import { formatRupiah, cn, parseLocalISO, getLocalDateString, isDigitalPenjualan
 import type { Transaction } from '../types'
 import TransactionRow from '../components/TransactionRow'
 import type { KasirAccount } from '../components/LoginScreen'
-import { CubicLogo } from '../components/CubicLogo'
+import { CubaLogo } from '../components/CubaLogo'
 
 interface RiwayatViewProps {
   active: boolean
@@ -861,10 +861,10 @@ const getMutasiLabel = (kategori: string): { label: string; color: string; icon:
               {props.storePhoto ? (
                 <img src={props.storePhoto} alt="Logo" className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md" />
               ) : (
-                <CubicLogo size={12} className="w-12 h-12" />
+                <CubaLogo size={12} className="w-12 h-12" />
               )}
               <div>
-                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'APLIKASI CUBIC'}</h1>
+                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'Kasir Cuba'}</h1>
                 <p className="text-blue-200 text-[8px] font-bold uppercase tracking-tighter opacity-80">{props.storeSubtext || 'Pembukuan Agen brilink & Konter'}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <span className="text-white text-[10px] font-black">{props.kasirName}</span>
@@ -1030,51 +1030,64 @@ const getMutasiLabel = (kategori: string): { label: string; color: string; icon:
              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-[280px] leading-normal">Riwayat Tambah / Mutasi saldo &amp; Kolom penyesuaian Catatan Saldo bank</p>
            </div>
            
-           <div className="flex gap-2 mb-4">
+           <div className="flex gap-2 mb-3">
               <button 
                 onClick={() => props.setActiveSaldoFilter('Mutasi')}
                 className={cn(
-                  "flex-1 p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 transition-all border-2 group",
+                  "flex-1 p-2 rounded-xl flex flex-col items-center text-center gap-1.5 transition-all border-2 group",
                   props.activeSaldoFilter === 'Mutasi'
                     ? "bg-blue-50 border-blue-500 shadow-md shadow-blue-500/10"
                     : "bg-white border-slate-100 hover:bg-slate-50 opacity-60 hover:opacity-100"
                 )}
               >
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mb-0.5",
+                    "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
                     props.activeSaldoFilter === 'Mutasi' ? "bg-blue-500 text-white shadow-inner" : "bg-slate-100 text-slate-400"
                   )}>
-                    <i className="fa-solid fa-wallet text-[12px]"></i>
+                    <i className="fa-solid fa-wallet text-[11px]"></i>
                   </div>
                  <h4 className={cn(
                    "text-[9px] font-black uppercase tracking-widest leading-tight",
                    props.activeSaldoFilter === 'Mutasi' ? "text-blue-700" : "text-slate-600"
-                 )}>Riwayat Tambah / Mutasi Aset Saldo</h4>
-                 <p className="text-[8px] font-bold text-slate-400 leading-tight">Riwayat pemasukan dan perputaran aset saldo</p>
+                 )}>Riwayat Mutasi Saldo</h4>
               </button>
               
               <button 
                 onClick={() => props.setActiveSaldoFilter('Penyesuaian')}
                 className={cn(
-                  "flex-1 p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 transition-all border-2 group",
+                  "flex-1 p-2 rounded-xl flex flex-col items-center text-center gap-1.5 transition-all border-2 group",
                   props.activeSaldoFilter === 'Penyesuaian'
                     ? "bg-fuchsia-50 border-fuchsia-500 shadow-md shadow-fuchsia-500/10"
                     : "bg-white border-slate-100 hover:bg-slate-50 opacity-60 hover:opacity-100"
                 )}
               >
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mb-0.5",
+                    "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
                     props.activeSaldoFilter === 'Penyesuaian' ? "bg-fuchsia-500 text-white shadow-inner" : "bg-slate-100 text-slate-400"
                   )}>
-                    <i className="fa-solid fa-scale-balanced text-[12px]"></i>
+                    <i className="fa-solid fa-scale-balanced text-[11px]"></i>
                   </div>
                  <h4 className={cn(
                    "text-[9px] font-black uppercase tracking-widest leading-tight",
                    props.activeSaldoFilter === 'Penyesuaian' ? "text-fuchsia-700" : "text-slate-600"
-                 )}>Riwayat Penyesuaian Catatan</h4>
-                 <p className="text-[8px] font-bold text-slate-400 leading-tight">Membadingkan saldo catatan pembukuan & M-Banking</p>
+                 )}>Riwayat Penyesuaian</h4>
               </button>
             </div>
+
+            {props.activeSaldoFilter === 'Mutasi' && (
+              <div className="mb-4 text-center bg-blue-50 p-2 rounded-lg border border-blue-100">
+                <p className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-normal">Riwayat Tambah / Mutasi Aset Saldo</p>
+                <p className="text-[9px] font-medium text-blue-600/80">Riwayat pemasukan dan perputaran aset saldo</p>
+              </div>
+            )}
+
+            {props.activeSaldoFilter === 'Penyesuaian' && (
+              <div className="mb-4 text-center bg-fuchsia-50 p-2 rounded-lg border border-fuchsia-100">
+                <p className="text-[10px] font-bold text-fuchsia-700 uppercase tracking-widest leading-normal">Riwayat Penyesuaian Catatan</p>
+                <p className="text-[9px] font-medium text-fuchsia-600/80">Membadingkan saldo catatan pembukuan & M-Banking</p>
+              </div>
+            )}
+
 
             {props.activeSaldoFilter === 'Mutasi' && (
               <div className="flex items-center gap-1.5 px-0.5 py-1 mb-4 overflow-x-auto hide-scrollbar">

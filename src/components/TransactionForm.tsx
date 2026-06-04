@@ -21,10 +21,25 @@ interface TransactionFormProps {
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({
-  walletBalances, kategori, setKategori, sumberDana, setSumberDana, tujuanDana, setTujuanDana, nominal, setNominal, admin, setAdmin, keterangan, setKeterangan, onSave, isSaving
+  walletBalances, kategori, setKategori, sumberDana, setSumberDana, tujuanDana, setTujuanDana, nominal, setNominal, admin, setAdmin, keterangan, setKeterangan, onSave, isSaving, presets
 }) => {
   const [isKetAuto, setIsKetAuto] = useState(true)
   const [isNonTunai, setIsNonTunai] = useState(false)
+  const [showKetPresets, setShowKetPresets] = useState(false)
+
+  const keteranganRef = useRef<HTMLTextAreaElement>(null)
+  const nominalRef = useRef<HTMLInputElement>(null)
+  const adminRef = useRef<HTMLInputElement>(null)
+  const submitBtnRef = useRef<HTMLButtonElement>(null)
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, nextRef: React.RefObject<any>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (nextRef.current) {
+        nextRef.current.focus()
+      }
+    }
+  }
   const wallets = getCategories() // returns IDs
   const configs = getCategoriesConfig()
   const isModalJual = configs[kategori] === 'modal_jual'
@@ -89,6 +104,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   const valJual = parseInt(admin.replace(/[^0-9]/g, ''), 10) || 0
   const labaCalculated = valJual - valModal
 
+  const filteredPresets = presets?.filter((p: any) => p.kategori === kategori && (p.keterangan || '').toLowerCase().includes(keterangan.toLowerCase())) || []
+  const isUangDigital = kategori === 'Transfer' || (!['Tarik Tunai', 'Aksesoris'].includes(kategori) && kategori !== '')
+
   return (
     <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 flex flex-col pt-6 relative" style={{ zIndex: 10 }}>
       {/* Main Form Fields */}
@@ -104,36 +122,36 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               onClick={() => handleCategoryChange('Transfer')}
               className={cn(
                 "py-2.5 px-1 rounded-xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-1 border",
-                kategori === 'Transfer' || (!['Tarik Tunai', 'Aksesoris'].includes(kategori) && kategori !== '') ? "bg-indigo-500 text-white border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
+                isUangDigital ? "bg-indigo-500 text-yellow-300 border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
               )}
             >
               <i className="fa-solid fa-money-bill-transfer text-xs block mb-0.5"></i>
               <span className="text-[9px] font-black uppercase tracking-widest leading-none">Uang Digital</span>
-              <span className={cn("text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter", kategori === 'Transfer' || (!['Tarik Tunai', 'Aksesoris'].includes(kategori) && kategori !== '') ? "text-indigo-100" : "text-slate-400")}>Transfer, Topup, Pembayaran</span>
+              {isUangDigital && <span className="text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter text-indigo-100">Transfer, Topup, Pembayaran</span>}
             </button>
             <button
               type="button"
               onClick={() => handleCategoryChange('Tarik Tunai')}
               className={cn(
                 "py-2.5 px-1 rounded-xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-1 border",
-                kategori === 'Tarik Tunai' ? "bg-indigo-500 text-white border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
+                kategori === 'Tarik Tunai' ? "bg-indigo-500 text-yellow-300 border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
               )}
             >
               <i className="fa-solid fa-hand-holding-dollar text-xs block mb-0.5"></i>
               <span className="text-[9px] font-black uppercase tracking-widest leading-none">Tarik Tunai</span>
-              <span className={cn("text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter", kategori === 'Tarik Tunai' ? "text-indigo-100" : "text-slate-400")}>Tarik Tunai Uang Nasabah</span>
+              {kategori === 'Tarik Tunai' && <span className="text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter text-indigo-100">Tarik Tunai Uang Nasabah</span>}
             </button>
             <button
               type="button"
               onClick={() => handleCategoryChange('Aksesoris')}
               className={cn(
                 "py-2.5 px-1 rounded-xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-1 border",
-                kategori === 'Aksesoris' ? "bg-indigo-500 text-white border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
+                kategori === 'Aksesoris' ? "bg-indigo-500 text-yellow-300 border-indigo-600 shadow-md scale-[1.02]" : "bg-white text-slate-500 border-gray-100 hover:bg-indigo-50"
               )}
             >
               <i className="fa-solid fa-box text-xs block mb-0.5"></i>
               <span className="text-[9px] font-black uppercase tracking-widest leading-none">Aksesoris</span>
-              <span className={cn("text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter", kategori === 'Aksesoris' ? "text-indigo-100" : "text-slate-400")}>Penjualan Barang Fisik</span>
+              {kategori === 'Aksesoris' && <span className="text-[7px] font-bold mt-0.5 px-1 uppercase tracking-tighter text-indigo-100">Penjualan Barang Fisik</span>}
             </button>
           </div>
         </div>
@@ -177,6 +195,58 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </div>
 
+        {/* Keterangan & Presets */}
+        <div className="relative group">
+          <label className="block text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1.5 px-1 flex justify-between items-center">
+            <span>Keterangan</span>
+            <button 
+              onClick={() => setIsKetAuto(!isKetAuto)} 
+              className={cn("text-[8px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1", isKetAuto ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400 hover:bg-gray-200")}
+              tabIndex={-1}
+            >
+              <i className={cn("fa-solid", isKetAuto ? "fa-robot" : "fa-keyboard")}></i>
+              {isKetAuto ? "Auto" : "Manual"}
+            </button>
+          </label>
+          <div className="relative">
+            <textarea 
+              ref={keteranganRef}
+              rows={2} 
+              placeholder="Contoh: Transfer Mandiri, Tarik Tunai BCA" 
+              value={keterangan}
+              onFocus={(e) => { setIsKetAuto(false); handleInputFocus(e as any); setShowKetPresets(true); }}
+              onBlur={() => setTimeout(() => setShowKetPresets(false), 200)}
+              onChange={(e) => { setKeterangan(e.target.value); setShowKetPresets(true); }}
+              onKeyDown={(e) => handleKeyDown(e, nominalRef)}
+              className="w-full form-input-modern resize-none text-[11px] tracking-wide"
+            ></textarea>
+            {showKetPresets && filteredPresets.length > 0 && (
+              <div className="absolute z-50 w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-1 max-h-48 overflow-y-auto">
+                {filteredPresets.map((p: any, i: number) => (
+                  <div 
+                    key={i} 
+                    onClick={() => {
+                      setKeterangan(p.keterangan);
+                      if (p.modal) setNominal(formatInputRupiah(p.modal.toString()));
+                      if (p.jual) setAdmin(formatInputRupiah(p.jual.toString()));
+                      setShowKetPresets(false);
+                    }}
+                    className="px-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <div className="text-[10px] font-bold text-slate-700">{p.keterangan}</div>
+                    {(p.modal || p.jual) && (
+                      <div className="text-[8px] font-black text-emerald-600 mt-0.5 uppercase">
+                        {p.modal ? `Modal: ${formatRupiah(p.modal).replace(',00', '')}` : ''} 
+                        {p.jual ? ` Jual: ${formatRupiah(p.jual).replace(',00', '')}` : ''}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Nominal & Admin Row */}
         <div className="flex items-center gap-3 w-full">
           <div className="relative group w-[55%]">
@@ -187,12 +257,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               <span className="text-[12px] font-black text-gray-400 select-none leading-none">Rp</span>
             </div>
             <input 
+              ref={nominalRef}
               type="text" 
               inputMode="numeric" 
               placeholder="0" 
               value={nominal}
-              onFocus={handleInputFocus}
+              onFocus={handleInputFocus as any}
               onChange={(e) => setNominal(formatInputRupiah(e.target.value))}
+              onKeyDown={(e) => handleKeyDown(e, adminRef)}
               className="w-full form-input-modern text-right pr-4 pl-10 text-[14px]"
             />
           </div>
@@ -213,12 +285,19 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               <span className="text-[12px] font-black text-gray-400 select-none leading-none">Rp</span>
             </div>
             <input 
+              ref={adminRef}
               type="text" 
               inputMode="numeric" 
               placeholder="0" 
               value={admin}
-              onFocus={handleInputFocus}
+              onFocus={handleInputFocus as any}
               onChange={(e) => setAdmin(formatInputRupiah(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  submitBtnRef.current?.focus();
+                }
+              }}
               className="w-full form-input-modern text-right pr-4 pl-10 text-[14px]"
             />
           </div>
@@ -239,32 +318,17 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         )}
 
-        {/* Keterangan */}
-        <div className="relative group">
-          <label className="block text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1.5 px-1 flex justify-between items-center">
-            <span>Keterangan</span>
-            <button 
-              onClick={() => setIsKetAuto(!isKetAuto)} 
-              className={cn("text-[8px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1", isKetAuto ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400 hover:bg-gray-200")}
-              tabIndex={-1}
-            >
-              <i className={cn("fa-solid", isKetAuto ? "fa-robot" : "fa-keyboard")}></i>
-              {isKetAuto ? "Auto" : "Manual"}
-            </button>
-          </label>
-          <textarea 
-            rows={2} 
-            placeholder="Contoh: Transfer Mandiri, Tarik Tunai BCA" 
-            value={keterangan}
-            onFocus={(e) => { setIsKetAuto(false); handleInputFocus(e); }}
-            onChange={(e) => setKeterangan(e.target.value)}
-            className="w-full form-input-modern resize-none text-[11px] tracking-wide"
-          ></textarea>
-        </div>
 
         {/* Submit */}
         <button 
+          ref={submitBtnRef}
           onClick={() => onSave()} 
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSave();
+            }
+          }}
           disabled={isSaving}
           className="w-full mt-4 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-400 disabled:to-indigo-400 text-white text-[10px] sm:text-xs font-black py-4 rounded-2xl shadow-lg shadow-blue-600/30 transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2"
         >

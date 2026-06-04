@@ -79,7 +79,7 @@
 }
 
 /* ==========================================================================
-   PERSPECTIVE DEVICE SIMULATORS (For Tablet & Mobile sizes on PC)
+   SCREEN SIZE MODES — Modern website style (no device frame border)
    ========================================================================== */
 .app-container {
   @apply min-h-screen flex flex-col transition-all duration-300 ease-in-out;
@@ -89,57 +89,83 @@
   @apply flex-row h-screen overflow-hidden;
 }
 
-/* Simulated screen device wrapper states on high-resolution screens */
+/* Full-width mode (hp/tablet on small screens, always on mobile) */
+.app-container.hp,
+.app-container.tablet {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  background-color: #f8fafc;
+}
+
+/* On large screens: center HP and Tablet with modern card look (no black border) */
 @media (min-width: 1024px) {
-  .app-container.hp {
-    max-width: 412px;
-    height: 860px;
-    min-height: 860px;
-    margin: 2.5rem auto;
-    border: 12px solid #1e293b;
-    border-radius: 40px;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45);
-    position: relative;
-    overflow: hidden;
-    background-color: #f8fafc;
+  body {
+    background: linear-gradient(135deg, #e8edf5 0%, #dde4f0 50%, #e4e8f5 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
-  
-  .app-container.tablet {
-    max-width: 820px;
-    height: 1100px;
-    min-height: 1100px;
-    margin: 2.5rem auto;
-    border: 16px solid #1e293b;
-    border-radius: 32px;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45);
-    position: relative;
+
+  .app-container.hp {
+    max-width: 430px;
+    height: 90vh;
+    min-height: 700px;
+    max-height: 920px;
+    margin: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    border-radius: 2rem;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.6),
+      0 32px 80px -16px rgba(30,41,59,0.22),
+      0 8px 24px -4px rgba(30,41,59,0.10);
     overflow: hidden;
     background-color: #f8fafc;
   }
 
-  /* Anchor fixed nested overlays, floating notifications, and navigation bars inside simulated devices */
-  .app-container.hp .fixed:not(.modal-fixed-bypass),
-  .app-container.tablet .fixed:not(.modal-fixed-bypass) {
+  .app-container.tablet {
+    max-width: 840px;
+    height: 90vh;
+    min-height: 700px;
+    max-height: 1080px;
+    margin: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    border-radius: 2rem;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.6),
+      0 32px 80px -16px rgba(30,41,59,0.22),
+      0 8px 24px -4px rgba(30,41,59,0.10);
+    overflow: hidden;
+    background-color: #f8fafc;
+  }
+
+  /* Fixed overlays stay relative inside centered containers */
+  .app-container.hp .fixed,
+  .app-container.tablet .fixed {
     position: absolute !important;
   }
 
-  /* Set high-contrast design backgrounds for external browser viewport context */
-  body {
-    background-color: #f1f5f9;
-    background-image: 
-      radial-gradient(at 50% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
+  html.theme-dark body {
+    background: #080b12;
     background-attachment: fixed;
   }
-  
-  html.theme-dark body {
-    background-color: #0b111e;
-    background-image: none;
-  }
-  
+
   html.theme-blue body {
-    background-color: #020614;
-    background-image: none;
+    background: #030916;
+    background-attachment: fixed;
   }
 }
 
@@ -343,18 +369,14 @@ html.theme-blue .border-cyan-400 {
   border-color: #00d2ff !important;
 }
 
-/* Device simulation frame border adjustments during Blue/Dark selections */
-@media (min-width: 1024px) {
-  html.theme-dark .app-container.hp,
-  html.theme-dark .app-container.tablet {
-    border-color: #1f2937 !important;
-    background-color: #0b0f19 !important;
-  }
-  
-  html.theme-blue .app-container.hp,
-  html.theme-blue .app-container.tablet {
-    border-color: #12244a !important;
-    background-color: #040919 !important;
-  }
+/* Theme backgrounds for hp/tablet in website mode */
+html.theme-dark .app-container.hp,
+html.theme-dark .app-container.tablet {
+  background-color: #0b0f19 !important;
+}
+
+html.theme-blue .app-container.hp,
+html.theme-blue .app-container.tablet {
+  background-color: #040919 !important;
 }
 

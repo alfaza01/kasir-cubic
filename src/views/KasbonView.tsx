@@ -133,10 +133,10 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
       </div>
 
       {/* Main Grid: Form + List */}
-      <div className={cn("flex-1 grid grid-cols-1 md:grid-cols-3 gap-6", props.isPc ? "overflow-hidden pb-14" : "pb-6")}>
+      <div className={cn("flex-1 grid gap-6", props.isPc ? "grid-cols-3 overflow-hidden pb-14" : "grid-cols-1 pb-6")}>
         
         {/* Form Column */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit md:col-span-1">
+        <div className={cn("bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit", props.isPc && "col-span-1")}>
           <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-2">
             <Plus size={12} className="text-blue-500" />
             <span>Tambah Piutang Kasbon</span>
@@ -212,7 +212,7 @@ export const KasbonView: React.FC<KasbonViewProps> = (props) => {
         </div>
 
         {/* List Column */}
-        <div className={cn("md:col-span-2 flex flex-col", props.isPc ? "overflow-hidden h-full" : "h-auto")}>
+        <div className={cn("flex flex-col", props.isPc ? "col-span-2 overflow-hidden h-full" : "h-auto")}>
           {/* Summary Box */}
           <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-4 flex items-center justify-between gap-4">
             <div>

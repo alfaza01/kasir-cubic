@@ -5,7 +5,8 @@ import TransactionForm from '../components/TransactionForm'
 import SummaryCards from '../components/SummaryCards'
 import type { Transaction, Store } from '../types'
 import { saveKasirAccounts, type KasirAccount } from '../components/LoginScreen'
-import { CubicLogo } from '../components/CubicLogo'
+import { CubaLogo } from '../components/CubaLogo'
+import CatatanView from './CatatanView';
 
 interface BerandaViewProps {
   active: boolean
@@ -185,7 +186,7 @@ const GajiPanel: React.FC<{
 
   const handleShareText = async () => {
     const lines = [
-      `Slip Gaji - ${storeName || 'APLIKASI CUBIC'}`,
+      `Slip Gaji - ${storeName || 'Kasir Cuba'}`,
       `Periode: ${monthLabel.toUpperCase()}`,
       `Nama: ${selectedName}`,
       `Hari Kerja: ${hariKerja} hari`,
@@ -463,7 +464,7 @@ const GajiPanel: React.FC<{
               <span className="font-black text-2xl tracking-tighter drop-shadow-md">{formatRupiah(totalGaji)}</span>
             </div>
             <div className="text-right">
-              <p className="text-[7px] font-bold text-green-200 uppercase tracking-widest">{storeName || 'APLIKASI CUBIC'}</p>
+              <p className="text-[7px] font-bold text-green-200 uppercase tracking-widest">{storeName || 'Kasir Cuba'}</p>
             </div>
           </div>
         </div>
@@ -510,7 +511,7 @@ const BackupPanel: React.FC<{
   const handleBackup = async () => {
     try {
       const backupData = {
-        store: storeName || "APLIKASI CUBIC",
+        store: storeName || "Kasir Cuba",
         timestamp: getLocalISOString(),
         data: {
           transactions,
@@ -834,6 +835,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
     })
   }
 
+  const [secretTap, setSecretTap] = useState(0);
   const activeOwnerSubView = props.activeView?.startsWith('view-owner-') ? props.activeView.replace('view-owner-', '') : null
   const isOwnerSubView = !!activeOwnerSubView
 
@@ -935,10 +937,10 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               {props.storePhoto ? (
                 <img src={props.storePhoto} alt="Logo" className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md" />
               ) : (
-                <CubicLogo size={12} className="w-12 h-12" />
+                <CubaLogo size={12} className="w-12 h-12" />
               )}
               <div>
-                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'APLIKASI CUBIC'}</h1>
+                <h1 className="text-[13px] font-black text-white leading-tight uppercase tracking-widest">{props.storeName || 'Kasir Cuba'}</h1>
                 <p className="text-blue-200 text-[8px] font-bold uppercase tracking-tighter opacity-80">{props.storeSubtext || 'Pembukuan Agen brilink & Konter'}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-white text-[10px] font-black">{props.kasirName}</span>
@@ -1340,7 +1342,19 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               <i className="fa-solid fa-shield-halved text-2xl"></i>
             </div>
             <div>
-              <h3 className="font-black text-white text-xl tracking-tight leading-none">Panel Owner</h3>
+              <h3
+                onClick={() => {
+                  const newTap = secretTap + 1;
+                  setSecretTap(newTap);
+                  if (newTap >= 7) {
+                    props.setActiveView('view-admin');
+                    setSecretTap(0);
+                  }
+                }}
+                className="font-black text-white text-xl tracking-tight leading-none select-none cursor-pointer"
+              >
+                Panel Owner
+              </h3>
               <p className="text-white/80 text-[11px] font-bold mt-1.5 uppercase tracking-widest">Kelola semua data toko</p>
             </div>
           </div>
@@ -1356,7 +1370,9 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               { id: 'view-owner-gaji', title: 'Gajih', desc: 'Data gaji kasir', icon: 'fa-dollar-sign', color: 'bg-green-600' },
               { id: 'view-owner-audit', title: 'Audit', desc: 'Audit uang laci', icon: 'fa-file-signature', color: 'bg-purple-600' },
               { id: 'view-owner-backup', title: 'Backup', desc: 'Backup & reset', icon: 'fa-database', color: 'bg-red-600' },
-              { id: 'view-akun', title: 'Setting', desc: 'Pengaturan app', icon: 'fa-gear', color: 'bg-slate-600' },
+              { id: 'view-owner-catatan', title: 'Catatan', desc: 'Catatan penting', icon: 'fa-clipboard', color: 'bg-yellow-600' },
+              { id: 'view-owner-keamanan', title: 'Keamanan', desc: 'Pengaturan PIN', icon: 'fa-shield-halved', color: 'bg-slate-700' },
+              { id: 'view-akun', title: 'Setting', desc: 'Identitas & App', icon: 'fa-gear', color: 'bg-slate-600' },
             ].map((item) => (
               <button 
                 key={item.id}
@@ -1393,6 +1409,8 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
             case 'audit': return { title: 'AUDIT KASIR', color: 'from-purple-600 to-purple-800', icon: 'fa-file-signature', desc: 'Pemeriksaan kesesuaian fisik uang di laci.' }
             case 'kategori': return { title: 'PENGATURAN KATEGORI', color: 'from-blue-600 to-blue-800', icon: 'fa-tags', desc: 'Kelola daftar kategori transaksi.' }
             case 'backup': return { title: 'BACKUP & RESET', color: 'from-red-600 to-red-800', icon: 'fa-database', desc: 'Cadangkan data dan kembalikan ke pengaturan awal.' }
+            case 'catatan': return { title: 'CATATAN OWNER', color: 'from-yellow-600 to-amber-500', icon: 'fa-clipboard', desc: 'Kelola catatan penting dan checklist.' }
+            case 'keamanan': return { title: 'KEAMANAN OWNER', color: 'from-slate-700 to-slate-900', icon: 'fa-shield-halved', desc: 'Atur PIN masuk untuk panel utama.' }
             default: return { title: 'PENGATURAN', color: 'from-gray-600 to-gray-800', icon: 'fa-gear', desc: 'Pengaturan lainnya.' }
           }
         };
@@ -2124,6 +2142,87 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                   />
                 </div>
                 )}
+
+              {activeOwnerSubView === 'catatan' && (
+                <div className="animate-in slide-in-from-right duration-300 relative h-[80vh]">
+                  <CatatanView
+                    active={true}
+                    isPc={props.isPc || false}
+                    setActiveView={(v) => {
+                       if (v === 'view-beranda') {
+                         props.setActiveView('view-owner-laporan');
+                       } else {
+                         props.setActiveView(v);
+                       }
+                    }}
+                    activeStoreId={props.activeStoreId === 'all' ? (props.pantauStoreId || 'all') : (props.activeStoreId || 'all')}
+                  />
+                </div>
+              )}
+
+              {activeOwnerSubView === 'keamanan' && (
+                <div className="p-4 sm:p-6 space-y-4 animate-in slide-in-from-right duration-300">
+                  <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
+                    <div className="p-5 space-y-5 bg-slate-50/50">
+                      <div className="flex items-center justify-between bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+                        <div>
+                          <p className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Wajibkan PIN Owner</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Minta PIN setiap masuk ke Panel Owner</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                             const current = localStorage.getItem('owner_pin_enabled') === 'true';
+                             localStorage.setItem('owner_pin_enabled', (!current).toString());
+                             props.showToast(!current ? "PIN Diaktifkan" : "PIN Dinonaktifkan");
+                             // Force render
+                             setSecretTap(prev => prev);
+                          }}
+                          className={"w-12 h-6 rounded-full shrink-0 relative transition-colors duration-300 ease-in-out border " + (localStorage.getItem('owner_pin_enabled') === 'true' ? "bg-emerald-500 border-emerald-600" : "bg-slate-300 border-slate-400")}
+                        >
+                          <div
+                            className={"w-5 h-5 bg-white rounded-full absolute top-[1px] transition-transform duration-300 shadow-sm " + (localStorage.getItem('owner_pin_enabled') === 'true' ? "translate-x-6 left-0" : "translate-x-[1px] left-0")}
+                          />
+                        </button>
+                      </div>
+
+                      {localStorage.getItem('owner_pin_enabled') === 'true' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Master PIN Owner</label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              readOnly
+                              value={localStorage.getItem('owner_pin_code') || "0000"}
+                              className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-black text-slate-400 tracking-widest shadow-sm"
+                            />
+                          </div>
+                          <p className="text-[9px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 inline-block mt-2">
+                            Ubah PIN melalui menu Akun Utama
+                          </p>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white border border-blue-100 rounded-[2rem] shadow-sm overflow-hidden mt-4">
+                    <div className="p-5 bg-blue-50/50 flex flex-col items-center text-center">
+                      <i className="fa-solid fa-users text-blue-600 text-3xl mb-3"></i>
+                      <h4 className="text-sm font-black text-slate-800 mb-1">Pengaturan PIN Kasir</h4>
+                      <p className="text-[10px] font-bold text-slate-500 mb-4 px-4">
+                        Kelola PIN masuk untuk setiap karyawan / kasir di toko ini.
+                      </p>
+                      <button 
+                        onClick={() => props.setActiveView('view-owner-monitor')}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        ATUR PIN KASIR <i className="fa-solid fa-chevron-right ml-1"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
               {activeOwnerSubView === 'izin' && (
                 <div className="space-y-4">
