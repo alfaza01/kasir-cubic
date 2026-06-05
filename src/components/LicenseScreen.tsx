@@ -19,7 +19,7 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
   const [showPushNotif, setShowPushNotif] = useState(false);
   
   const deviceId = localStorage.getItem('cubic_device_id') || 'ID-UNKNOWN';
-  const waNumber = localStorage.getItem('cubic_owner_wa') || '6287824889706';
+  const [waNumber, setWaNumberState] = useState(localStorage.getItem('cubic_owner_wa') || '6287824889706');
 
   // License State
   const [licenseKey, setLicenseKey] = useState('');
@@ -33,6 +33,17 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
   const [deviceToDelete, setDeviceToDelete] = useState<{id: string, name: string} | null>(null);
 
   useEffect(() => {
+    // Fetch nomor WA dari config online (public/config.json)
+    fetch('/config.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(cfg => {
+        if (cfg?.owner_wa) {
+          localStorage.setItem('cubic_owner_wa', cfg.owner_wa);
+          setWaNumberState(cfg.owner_wa);
+        }
+      })
+      .catch(() => {}); // fallback ke localStorage/hardcode jika offline
+
     // Simulasi push notification
     const timer = setTimeout(() => {
       setShowPushNotif(true);

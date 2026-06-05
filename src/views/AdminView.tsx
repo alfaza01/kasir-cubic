@@ -244,26 +244,29 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
             
             <div className="space-y-4">
               <div>
-                <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Nomor WhatsApp Owner (Aktivasi)</label>
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Nomor WhatsApp Owner (Aktivasi Lisensi)</label>
                 <div className="flex gap-2">
                   <input 
                     type="text" 
                     value={waNumber}
                     onChange={e => setWaNumber(e.target.value.replace(/\D/g, ''))}
                     placeholder="628..."
-                    className="flex-1 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
+                    className="flex-1 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none"
                   />
                   <button 
                     onClick={() => {
                       localStorage.setItem('cubic_owner_wa', waNumber);
-                      alert('Nomor WhatsApp berhasil disimpan!');
+                      showToast?.('✅ Nomor WA tersimpan di perangkat ini!');
                     }}
                     className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors"
                   >
                     Simpan
                   </button>
                 </div>
-                <p className="text-[8px] text-slate-500 mt-2 font-medium">Gunakan kode negara (62). Contoh: 628123456789</p>
+                <div className="mt-2 p-2 bg-blue-950/40 border border-blue-800/40 rounded-lg">
+                  <p className="text-[8px] text-blue-400 font-bold">📡 Update Online: Edit file <span className="text-white font-mono">public/config.json</span> di GitHub → semua pengguna otomatis baca nomor baru saat online.</p>
+                  <p className="text-[8px] text-slate-500 mt-1">Format: 628XXXXXXXXX (kode negara 62)</p>
+                </div>
               </div>
             </div>
             
