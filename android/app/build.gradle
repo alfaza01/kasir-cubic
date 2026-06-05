@@ -18,11 +18,15 @@ android {
     }
     signingConfigs {
         release {
-            // Membaca konfigurasi dari Environment Variables (GitHub Secrets)
-            storeFile file(System.getenv("KEYSTORE_PATH") ?: "release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEYSTORE_PASSWORD")
+            // Membaca dari Environment Variables (GitHub Secrets) atau gradle.properties (build lokal)
+            def keystorePath = System.getenv("KEYSTORE_PATH") ?: project.findProperty("STORE_FILE") ?: "release.keystore"
+            def keystorePass = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("STORE_PASSWORD") ?: ""
+            def keyAliasVal = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") ?: ""
+            def keyPass = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEY_PASSWORD") ?: ""
+            storeFile file(keystorePath)
+            storePassword keystorePass
+            keyAlias keyAliasVal
+            keyPassword keyPass
         }
     }
 
