@@ -353,5 +353,28 @@ if (!client) {
   client = localSupabase
 }
 
-export const supabase = client
+export const getOwnerWa = async (): Promise<string> => {
+  // Try to read from remote config (app_config table) first
+  try {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('owner_wa')
+      .maybeSingle();
+    if (!error && data?.owner_wa) return data.owner_wa as string;
+  } catch (_) {}
+  // Fallback to localStorage (used in offline mode)
+  const saved = localStorage.getItem('cubic_owner_wa');
+  return saved ?? '';
+};
+
+export const setOwnerWa = async (wa: string): Promise<void> => {
+  // Update remote config (app_config table) if possible
+  try {
+    await supabase.from('app_config').upsert({ id: 'owner', owner_wa: wa });
+  } catch (_) {}
+  // Always keep a local copy for offline fallback
+  localStorage.setItem('cubic_owner_wa', wa);
+};
+
+export const supabase = client;
 

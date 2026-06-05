@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
+import { getOwnerWa, setOwnerWa } from '../lib/supabase';
 import { motion } from 'motion/react'
 import { cn } from '../lib/utils'
-import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle, Key } from 'lucide-react'
+import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle, Key, Copy } from 'lucide-react'
 import { generateLicenseCode, LICENSE_PACKAGES } from '../lib/license'
 
 interface AdminViewProps {
@@ -30,10 +31,17 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
   const [adminTab, setAdminTab] = useState<'lisensi' | 'properti'>('lisensi')
   const [userFeedbacks, setUserFeedbacks] = useState<any[]>([])
 
+  // Fetch owner WA from Supabase on mount
   React.useEffect(() => {
     if (active) {
-      const savedWa = localStorage.getItem('cubic_owner_wa');
-      if (savedWa) setWaNumber(savedWa);
+      // Load current WA number from remote config
+      getOwnerWa()
+        .then((wa) => setWaNumber(wa))
+        .catch(() => {
+          // fallback to default if remote fetch fails
+          const savedWa = localStorage.getItem('cubic_owner_wa');
+          if (savedWa) setWaNumber(savedWa);
+        });
       const savedReg = localStorage.getItem('cubic_client_registry');
       if (savedReg) {
         try { setClientRegistry(JSON.parse(savedReg)) } catch(e){}
@@ -44,6 +52,18 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
       }
     }
   }, [active]);
+
+  // Save WA number to Supabase (and also keep a local copy for offline fallback)
+  const handleSaveWa = async () => {
+    try {
+      await setOwnerWa(waNumber);
+      localStorage.setItem('cubic_owner_wa', waNumber);
+      showToast?.('✅ Nomor WA tersimpan secara global!');
+    } catch (e) {
+      console.error(e);
+      alert('Gagal menyimpan nomor WA ke server');
+    }
+  };
 
   if (!active) return null
 
@@ -307,13 +327,36 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Customer Device ID</label>
-                  <input 
-                    type="text" 
-                    value={genDeviceId}
-                    onChange={e => setGenDeviceId(e.target.value.toUpperCase())}
-                    placeholder="ID-..."
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={genDeviceId}
+                      onChange={e => setGenDeviceId(e.target.value.toUpperCase())}
+                      placeholder="ID-..."
+                      className="flex-1 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-5 text-xs text-white uppercase font-bold focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `ID-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                        setGenDeviceId(newId);
+                      }}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Generate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(genDeviceId);
+                        showToast?.('✅ Device ID copied!');
+                      }}
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl"
+                      title="Copy Device ID"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono mb-1.5">Package Type</label>
