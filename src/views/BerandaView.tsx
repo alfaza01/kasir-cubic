@@ -2214,17 +2214,17 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
 
                       {localStorage.getItem('owner_pin_enabled') === 'true' && (
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Master PIN Owner</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Ubah Master PIN Owner</label>
                           <div className="relative">
                             <input
-                              type="password"
-                              readOnly
-                              value={localStorage.getItem('owner_pin_code') || "0000"}
-                              className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-black text-slate-400 tracking-widest shadow-sm"
+                              type="text"
+                              defaultValue={localStorage.getItem('owner_pin_code') || "0000"}
+                              onChange={(e) => localStorage.setItem('owner_pin_code', e.target.value)}
+                              className="w-full bg-white border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-2xl px-5 py-4 text-sm font-black text-slate-800 tracking-widest shadow-sm outline-none transition-all"
                             />
                           </div>
-                          <p className="text-[9px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 inline-block mt-2">
-                            Ubah PIN melalui menu Akun Utama
+                          <p className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 inline-block mt-2">
+                            PIN otomatis tersimpan saat Anda mengetik
                           </p>
                         </div>
                       )}

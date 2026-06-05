@@ -135,7 +135,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
   const [showOwnerPin, setShowOwnerPin] = useState(false)
 
   const handleOwnerClick = () => {
-    const isEnabled = localStorage.getItem('alphaPro_owner_pin_enabled') !== 'false'
+    const isEnabled = localStorage.getItem('owner_pin_enabled') === 'true'
     if (isEnabled) {
       setIsOwnerPinModalOpen(true)
     } else {
@@ -145,7 +145,7 @@ export const SelectorScreen: React.FC<SelectorScreenProps> = ({
 
   const handleOwnerLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const currentPin = localStorage.getItem('alphaPro_owner_pin') || '0000'
+    const currentPin = localStorage.getItem('owner_pin_code') || '0000'
     if (ownerPinInput === currentPin) {
       setIsOwnerPinModalOpen(false)
       setOwnerPinInput('')
