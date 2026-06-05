@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, RefreshCw, Smartphone, Key, CreditCard, Bell, 
   AlertCircle, X, History as HistoryIcon, Trash2, 
-  AlertTriangle, Check, Users, Sparkles, CheckCircle2, ShieldAlert
+  AlertTriangle, Check, Users, Sparkles, CheckCircle2, ShieldAlert, MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { validateLicenseCode } from '../lib/license';
@@ -428,6 +428,35 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
 
               {activeTab === 'daftar-berlangganan' && (
                 <div className="pb-10 space-y-4">
+                  
+                  {/* Banner Kontak Developer */}
+                  <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl p-6 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden flex items-center justify-between mb-2 border border-blue-500/30">
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl"></div>
+                    
+                    <div className="relative z-10 flex-1 pr-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center border border-white/20 shadow-inner">
+                          <MessageCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-white/95">Pusat Layanan & Pembelian</h3>
+                      </div>
+                      <p className="text-[11px] font-bold leading-relaxed text-blue-100/90 mb-4 max-w-[240px]">
+                        Silakan hubungi WhatsApp Developer kami untuk melakukan pembelian paket lisensi Kasir Cuba.
+                      </p>
+                      <div className="inline-flex items-center gap-2.5 bg-black/20 border border-white/10 px-3.5 py-2 rounded-xl backdrop-blur-md shadow-inner">
+                        <span className="font-mono text-xs font-black tracking-widest text-emerald-400">{waNumber}</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => window.open(`https://wa.me/${waNumber}?text=Halo%20Admin%20Developer,%20saya%20tertarik%20untuk%20membeli%20lisensi%20Kasir%20Cuba.%20Mohon%20info%20lebih%20lanjut.%20Device%20ID:%20${deviceId}`, '_blank')}
+                      className="relative z-10 shrink-0 w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all border border-emerald-300"
+                    >
+                      <MessageCircle className="w-6 h-6 fill-current" />
+                    </button>
+                  </div>
+
                   {packages.map((pkg) => (
                     <div key={pkg.name} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 flex flex-col relative overflow-hidden group hover:border-blue-300 transition-colors">
                       {pkg.badge && (
