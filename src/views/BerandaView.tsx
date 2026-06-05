@@ -765,6 +765,8 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
   const [kasirFormId, setKasirFormId] = useState('')
   const [kasirFormName, setKasirFormName] = useState('')
   const [kasirFormPin, setKasirFormPin] = useState('')
+  const [isKasirModalOpen, setIsKasirModalOpen] = useState(false)
+  const [kasirModalMode, setKasirModalMode] = useState<'add'|'edit'>('add')
 
   // Izin State
   const [izinNamaKasir, setIzinNamaKasir] = useState('')
@@ -1518,56 +1520,36 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                   </div>
                 ) : (
                   <>
-                    {/* Add Kasir Form */}
-                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                      <h4 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-3">Tambah / Edit Kasir</h4>
-                      <div className="space-y-2">
-                        <input type="text" placeholder="ID Kasir (contoh: kasir3)" value={kasirFormId} onChange={e => setKasirFormId(e.target.value)} className="w-full text-xs p-2 rounded-lg border outline-none font-bold" />
-                        <input type="text" placeholder="Nama Kasir" value={kasirFormName} onChange={e => setKasirFormName(e.target.value)} className="w-full text-xs p-2 rounded-lg border outline-none font-bold" />
-                        <input type="text" placeholder="PIN (4-6 digit)" value={kasirFormPin} onChange={e => setKasirFormPin(e.target.value)} className="w-full text-xs p-2 rounded-lg border outline-none font-bold" />
-                        <button onClick={() => {
-                          if(!kasirFormId.trim() || !kasirFormName.trim() || !kasirFormPin) return props.showToast('Lengkapi data kasir');
-                          // Validasi: ID kasir tidak boleh sama dengan yang sudah ada
-                          const existingIds = Object.keys(props.kasirList || {})
-                          if (existingIds.includes(kasirFormId.trim())) {
-                            return props.showToast(`ID "${kasirFormId}" sudah digunakan kasir lain!`);
-                          }
-                          if (kasirFormPin.length < 4) return props.showToast('PIN minimal 4 digit!');
-                          const newKasirList = { ...props.kasirList, [kasirFormId.trim()]: { pin: kasirFormPin, role: 'kasir' as any, name: kasirFormName.trim() } };
-                          const targetStoreId = props.pantauStoreId;
-                          if (targetStoreId && targetStoreId !== 'all') {
-                            localStorage.setItem(`alphaPro_${targetStoreId}_kasir_list`, JSON.stringify(newKasirList));
-                            if (props.onSyncStoreSettings) {
-                              props.onSyncStoreSettings(targetStoreId, { cashiers: newKasirList });
-                            } else {
-                              supabase.from('store_settings').upsert({
-                                store_id: targetStoreId,
-                                cashiers: newKasirList,
-                                updated_at: new Date().toISOString()
-                              }).then(({ error }) => {
-                                if (error) console.error("Gagal update cashiers ke DB:", error.message);
-                              });
-                            }
-                          } else {
-                            saveKasirAccounts(newKasirList);
-                          }
-                          props.refreshKasirList(newKasirList);
-                          setKasirFormId(''); setKasirFormName(''); setKasirFormPin('');
-                          props.showToast("Data Kasir Disimpan!");
-                        }} className="w-full bg-blue-600 text-white text-[10px] font-black py-2 rounded-lg uppercase">Simpan Kasir</button>
-                      </div>
-                    </div>
+                    {/* Add Kasir Button */}
+                    <button 
+                      onClick={() => {
+                        setKasirModalMode('add');
+                        setKasirFormId('');
+                        setKasirFormName('');
+                        setKasirFormPin('');
+                        setIsKasirModalOpen(true);
+                      }}
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
+                    >
+                      <i className="fa-solid fa-user-plus text-sm"></i> Tambah Kasir Baru
+                    </button>
 
                     <div className="space-y-2">
                       {Object.entries(props.kasirList || {}).filter(([id]) => id !== 'owner').map(([id, account]) => {
                         return (
-                          <div key={id} className="p-3 border border-gray-100 rounded-2xl flex justify-between items-center bg-gray-50/50">
+                          <div key={id} className="p-3 border border-gray-100 rounded-2xl flex justify-between items-center bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                             <div>
                               <p className="text-xs font-black text-gray-800">{account.name}</p>
                               <p className="text-[9px] text-gray-400 font-bold uppercase">ID: {id} | PIN: {account.pin}</p>
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => { setKasirFormId(id); setKasirFormName(account.name); setKasirFormPin(account.pin); }} className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                              <button onClick={() => { 
+                                setKasirModalMode('edit');
+                                setKasirFormId(id); 
+                                setKasirFormName(account.name); 
+                                setKasirFormPin(account.pin); 
+                                setIsKasirModalOpen(true);
+                              }} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors">
                                 <i className="fa-solid fa-pen text-[10px]"></i>
                               </button>
                               <button onClick={() => {
@@ -1593,7 +1575,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                                   props.refreshKasirList(n);
                                   props.showToast("Berhasil Dihapus");
                                 })
-                              }} className="w-7 h-7 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                              }} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors">
                                 <i className="fa-solid fa-trash text-[10px]"></i>
                               </button>
                             </div>
@@ -2946,6 +2928,118 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
           />
         </div>
       )}
+
+      {/* MODAL KASIR (TAMBAH / EDIT) */}
+      <AnimatePresence>
+        {isKasirModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl border border-slate-100"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                    <i className={cn("fa-solid", kasirModalMode === 'add' ? "fa-user-plus" : "fa-pen")}></i>
+                  </div>
+                  <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-wide leading-tight">
+                    {kasirModalMode === 'add' ? 'Tambah Kasir' : 'Edit PIN Kasir'}
+                  </h3>
+                </div>
+                <button onClick={() => setIsKasirModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-1">ID Kasir (Tanpa Spasi)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: kasir3" 
+                    value={kasirFormId} 
+                    onChange={e => setKasirFormId(e.target.value.replace(/\s+/g, ''))} 
+                    disabled={kasirModalMode === 'edit'}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-slate-800 font-black outline-none transition-all disabled:opacity-50 disabled:bg-slate-100" 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-1">Nama Kasir</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nama Lengkap/Panggilan" 
+                    value={kasirFormName} 
+                    onChange={e => setKasirFormName(e.target.value)} 
+                    disabled={kasirModalMode === 'edit'}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-slate-800 font-black outline-none transition-all disabled:opacity-50 disabled:bg-slate-100" 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-1">PIN Kasir (4-6 Digit Angka)</label>
+                  <input 
+                    type="number" 
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    placeholder="Contoh: 123456" 
+                    value={kasirFormPin} 
+                    onChange={e => setKasirFormPin(e.target.value)} 
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-slate-800 font-black tracking-[0.2em] outline-none transition-all" 
+                  />
+                  {kasirModalMode === 'edit' && (
+                    <p className="text-[9px] text-amber-600 font-bold px-1 mt-1">Hanya bisa mengubah PIN pada mode edit.</p>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <button 
+                    onClick={() => {
+                      if(!kasirFormId.trim() || !kasirFormName.trim() || !kasirFormPin) return props.showToast('Lengkapi data kasir');
+                      const existingIds = Object.keys(props.kasirList || {})
+                      if (kasirModalMode === 'add' && existingIds.includes(kasirFormId.trim())) {
+                        return props.showToast(`ID "${kasirFormId}" sudah digunakan kasir lain!`);
+                      }
+                      if (kasirFormPin.length < 4) return props.showToast('PIN minimal 4 digit!');
+                      
+                      const newKasirList = { ...props.kasirList, [kasirFormId.trim()]: { pin: kasirFormPin, role: 'kasir' as any, name: kasirFormName.trim() } };
+                      const targetStoreId = props.pantauStoreId;
+                      if (targetStoreId && targetStoreId !== 'all') {
+                        localStorage.setItem(`alphaPro_${targetStoreId}_kasir_list`, JSON.stringify(newKasirList));
+                        if (props.onSyncStoreSettings) {
+                          props.onSyncStoreSettings(targetStoreId, { cashiers: newKasirList });
+                        } else {
+                          supabase.from('store_settings').upsert({
+                            store_id: targetStoreId,
+                            cashiers: newKasirList,
+                            updated_at: new Date().toISOString()
+                          }).then(({ error }) => {
+                            if (error) console.error("Gagal update cashiers ke DB:", error.message);
+                          });
+                        }
+                      } else {
+                        saveKasirAccounts(newKasirList);
+                      }
+                      props.refreshKasirList(newKasirList);
+                      setKasirFormId(''); setKasirFormName(''); setKasirFormPin('');
+                      setIsKasirModalOpen(false);
+                      props.showToast("Data Kasir Disimpan!");
+                    }}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    SIMPAN {kasirModalMode === 'add' ? 'KASIR BARU' : 'PERUBAHAN'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
