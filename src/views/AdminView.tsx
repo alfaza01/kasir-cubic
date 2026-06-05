@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getOwnerWa, setOwnerWa } from '../lib/supabase';
-import { motion } from 'motion/react'
+
 import { cn } from '../lib/utils'
 import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle, Key, Copy } from 'lucide-react'
 import { generateLicenseCode, LICENSE_PACKAGES } from '../lib/license'
