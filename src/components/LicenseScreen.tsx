@@ -19,7 +19,7 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
   const [showPushNotif, setShowPushNotif] = useState(false);
   
   const deviceId = localStorage.getItem('cubic_device_id') || 'ID-UNKNOWN';
-  const waNumber = localStorage.getItem('cubic_owner_wa') || '6282269429188';
+  const waNumber = localStorage.getItem('cubic_owner_wa') || '6287824889706';
 
   // License State
   const [licenseKey, setLicenseKey] = useState('');

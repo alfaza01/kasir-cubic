@@ -445,7 +445,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-px bg-slate-100">
               <button 
                 onClick={() => {
-                  const wa = localStorage.getItem('cubic_owner_wa') || '6281234567890';
+                  const wa = localStorage.getItem('cubic_owner_wa') || '6287824889706';
                   const msg = encodeURIComponent("Halo Tim Support Aplikasi Kasir, saya membutuhkan bantuan panduan / kendala teknis.");
                   window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
                 }}
