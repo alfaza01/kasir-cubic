@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import { formatRupiah, formatInputRupiah, cn, getLocalISOString, getLocalDateString, parseLocalISO, getCategories, getWalletName, getCategoriesConfig, isDigitalPenjualan, calculateDailyStats } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { checkAppLicenseStatus } from '../lib/license'
