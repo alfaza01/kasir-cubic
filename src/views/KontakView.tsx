@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '../lib/utils'
-import { ArrowLeft, Plus, Search, Trash2, Send, Phone, User, Tag, HelpCircle, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, Search, Trash2, Send, Phone, User, Tag, HelpCircle, FileText, Copy } from 'lucide-react'
 
 interface KontakViewProps {
   active: boolean
@@ -34,6 +34,7 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
   const [phone, setPhone] = useState('')
   const [tipe, setTipe] = useState<'PELANGGAN' | 'AGEN' | 'SALES' | 'LAINNYA'>('PELANGGAN')
   const [keterangan, setKeterangan] = useState('')
+  const [editingContactId, setEditingContactId] = useState<string | null>(null)
 
   useEffect(() => {
     if (props.active) {
@@ -55,34 +56,59 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
     localStorage.setItem(`alphaPro_${props.activeStoreId}_kontak_list`, JSON.stringify(list))
   }
 
+  const handleEditClick = (contact: Contact) => {
+    setEditingContactId(contact.id)
+    setName(contact.name)
+    setPhone(contact.phone)
+    setTipe(contact.tipe)
+    setKeterangan(contact.keterangan === '-' ? '' : contact.keterangan)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingContactId(null)
+    setName('')
+    setPhone('')
+    setKeterangan('')
+  }
+
   const handleCreateContact = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !phone.trim()) {
-      props.showToast('HARAP LENGKAPI NAMA & NOMOR TELEPON!')
+      props.showToast('HARAP LENGKAPI NAMA & NOMOR!')
       return
     }
 
-    // Standardize phone format (e.g. 08xx -> 628xx)
-    let formattedPhone = phone.trim().replace(/[^0-9]/g, '')
-    if (formattedPhone.startsWith('0')) {
-      formattedPhone = '62' + formattedPhone.slice(1)
-    } else if (!formattedPhone.startsWith('62') && formattedPhone.length > 5) {
-      formattedPhone = '62' + formattedPhone
+    if (editingContactId) {
+      const updated = contacts.map(c => {
+        if (c.id === editingContactId) {
+          return {
+            ...c,
+            name: name.trim().toUpperCase(),
+            phone: phone.trim().replace(/[^0-9]/g, ''),
+            tipe,
+            keterangan: keterangan.trim() || '-',
+            kasirName: props.kasirName
+          }
+        }
+        return c
+      })
+      saveList(updated)
+      props.showToast('KONTAK BERHASIL DIPERBARUI!')
+      setEditingContactId(null)
+    } else {
+      const newContact: Contact = {
+        id: 'contact_' + Date.now(),
+        name: name.trim().toUpperCase(),
+        phone: phone.trim().replace(/[^0-9]/g, ''),
+        tipe,
+        keterangan: keterangan.trim() || '-',
+        created_at: new Date().toISOString(),
+        kasirName: props.kasirName
+      }
+      const updated = [newContact, ...contacts]
+      saveList(updated)
+      props.showToast('KONTAK BARU DISIMPAN!')
     }
-
-    const newContact: Contact = {
-      id: 'contact_' + Date.now(),
-      name: name.trim().toUpperCase(),
-      phone: formattedPhone,
-      tipe,
-      keterangan: keterangan.trim() || '-',
-      created_at: new Date().toISOString(),
-      kasirName: props.kasirName
-    }
-
-    const updated = [newContact, ...contacts]
-    saveList(updated)
-    props.showToast('KONTAK BARU DISIMPAN!')
 
     // Reset Form
     setName('')
@@ -135,8 +161,8 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
         {/* Form Column */}
         <div className={cn("bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4 h-fit", props.isPc && "col-span-1")}>
           <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-2">
-            <Plus size={12} className="text-blue-500" />
-            <span>Tambah Kontak Baru</span>
+            {editingContactId ? <i className="fa-solid fa-pen text-blue-500" /> : <Plus size={12} className="text-blue-500" />}
+            <span>{editingContactId ? 'Edit Detail Kontak' : 'Tambah Kontak Baru'}</span>
           </h4>
 
           <form onSubmit={handleCreateContact} className="space-y-4">
@@ -156,13 +182,13 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono">No. HP / WhatsApp (Indonesia)</label>
+              <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider pl-1 block font-mono">NO WA, NO PPOB, NO TOKEN</label>
               <div className="relative">
                 <Phone size={14} className="absolute left-3.5 top-3 text-slate-600" />
                 <input
-                  type="tel"
+                  type="text"
                   required
-                  placeholder="Contoh: 0812345678"
+                  placeholder="Contoh: 0812345678 atau 32018273"
                   value={phone}
                   onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                   className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 font-bold focus:outline-none"
@@ -201,13 +227,24 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] tracking-widest uppercase rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/10 active:scale-95 transition-all"
-            >
-              <Plus size={13} className="stroke-[3]" />
-              <span>Simpan Kontak</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] tracking-widest uppercase rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/10 active:scale-95 transition-all"
+              >
+                {editingContactId ? <i className="fa-solid fa-check text-[11px]" /> : <Plus size={13} className="stroke-[3]" />}
+                <span>{editingContactId ? 'Simpan' : 'Simpan Kontak'}</span>
+              </button>
+              {editingContactId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] tracking-widest uppercase rounded-xl active:scale-95 transition-all"
+                >
+                  Batal
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -255,7 +292,19 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
                           {contact.tipe}
                         </span>
                       </div>
-                      <p className="text-xs font-extrabold text-blue-500 tracking-wide">📞 +{contact.phone}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs font-extrabold text-blue-500 tracking-wide">NO: {contact.phone}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(contact.phone);
+                            props.showToast('NOMOR HP BERHASIL DISALIN!');
+                          }}
+                          className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-sm border border-blue-100"
+                          title="Salin Nomor"
+                        >
+                          <Copy size={15} className="stroke-[2.5]" />
+                        </button>
+                      </div>
                       <div className="text-[8px] text-slate-500 font-bold uppercase mt-1.5 tracking-wider space-y-0.5">
                         <div>📝 Ket: {contact.keterangan}</div>
                         {contact.kasirName && <div>👤 By: {contact.kasirName}</div>}
@@ -264,7 +313,7 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
 
                     <div className={cn("flex gap-2 shrink-0", !props.isPc && "w-full justify-end pt-2 border-t border-slate-100")}>
                       <a
-                        href={`https://wa.me/${contact.phone}`}
+                        href={`https://wa.me/${contact.phone.startsWith('0') ? '62' + contact.phone.slice(1) : contact.phone}`}
                         target="_blank"
                         rel="noreferrer referrer"
                         className="w-7.5 h-7.5 rounded-lg bg-emerald-950/30 border border-emerald-900/30 hover:bg-emerald-900/35 text-emerald-400 flex items-center justify-center transition-all active:scale-90"
@@ -272,6 +321,14 @@ export const KontakView: React.FC<KontakViewProps> = (props) => {
                       >
                         <Send size={13} />
                       </a>
+
+                      <button
+                        onClick={() => handleEditClick(contact)}
+                        className="w-7.5 h-7.5 rounded-lg bg-blue-950/30 border border-blue-900/30 hover:bg-blue-900/35 text-blue-400 flex items-center justify-center transition-all active:scale-90"
+                        title="Edit Kontak"
+                      >
+                        <i className="fa-solid fa-pen text-[10px]"></i>
+                      </button>
 
                       <button
                         onClick={() => handleDeleteContact(contact.id, contact.name)}

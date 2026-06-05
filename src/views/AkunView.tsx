@@ -443,7 +443,14 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-2">MENU AKUN</h3>
             
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-px bg-slate-100">
-              <button className="w-full flex items-center justify-between p-4 bg-white active:bg-slate-50">
+              <button 
+                onClick={() => {
+                  const wa = localStorage.getItem('cubic_owner_wa') || '6281234567890';
+                  const msg = encodeURIComponent("Halo Tim Support Aplikasi Kasir, saya membutuhkan bantuan panduan / kendala teknis.");
+                  window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
+                }}
+                className="w-full flex items-center justify-between p-4 bg-white active:bg-slate-50"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                     <HelpCircle size={16} fill="currentColor" className="text-blue-300" />
@@ -481,15 +488,33 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                           Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke tim developer CUBA melalui WhatsApp di bawah ini.
                         </p>
                       </div>
-                      <a
-                        href="https://wa.me/6281234567890?text=Halo%20Tim%20CUBA%2C%20saya%20ingin%20menyampaikan%20masukan%3A%20"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        <MessageSquare size={15} />
-                        <span>Kirim Saran via WhatsApp</span>
-                      </a>
+                      <div className="space-y-2 mt-2">
+                        <textarea
+                          id="feedbackInput"
+                          rows={4}
+                          placeholder="Tulis saran, kritik, atau ide fitur baru di sini..."
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl px-4 py-3 text-xs font-semibold text-slate-800 resize-none outline-none"
+                        ></textarea>
+                        <button
+                          onClick={() => {
+                            const input = document.getElementById('feedbackInput') as HTMLTextAreaElement;
+                            const text = input?.value.trim();
+                            if (!text) return alert('Silakan tulis masukan Anda terlebih dahulu.');
+                            
+                            const feedbacks = JSON.parse(localStorage.getItem('cubic_user_feedbacks') || '[]');
+                            feedbacks.unshift({ id: Date.now(), text, date: new Date().toISOString(), user: props.kasirName || 'Kasir' });
+                            localStorage.setItem('cubic_user_feedbacks', JSON.stringify(feedbacks));
+                            
+                            input.value = '';
+                            alert('Terima kasih! Masukan Anda telah berhasil dikirim ke Panel Owner.');
+                            toggleSection('saranKritik');
+                          }}
+                          className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <MessageSquare size={15} />
+                          <span>Kirim ke Panel Admin</span>
+                        </button>
+                      </div>
                       <div className="text-center">
                         <p className="text-[9px] text-slate-400 font-semibold">Versi Aplikasi: CUBA v4.0</p>
                         <p className="text-[9px] text-slate-400 font-semibold">Akun: {props.googleEmail || props.kasirName}</p>

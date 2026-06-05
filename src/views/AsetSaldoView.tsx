@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { formatRupiah, cn, getCategories, getCategoriesConfig, getLocalDateString, getWallets, getWalletName, resolveWalletId, isDigitalPenjualan } from '../lib/utils'
+import { formatRupiah, formatInputRupiah, cn, getCategories, getCategoriesConfig, getLocalDateString, getWallets, getWalletName, resolveWalletId, isDigitalPenjualan } from '../lib/utils'
 import type { Transaction, WalletNode } from '../types'
 import { getKasirAccounts, type KasirAccount } from '../components/LoginScreen'
 import { CubaLogo } from '../components/CubaLogo'
@@ -79,6 +79,22 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
   });
 
   const totalBalance = Object.values(walletBalances).reduce((a, b) => a + b, 0);
+
+  // Calculate cumulative real balance for each wallet
+  const walletRealBalances: Record<string, number> = {};
+  props.transactions.forEach(t => {
+    const katLower = t.kategori.toLowerCase();
+    if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
+      const appName = (t.keterangan || '').trim().toUpperCase();
+      if (appName) {
+        walletRealBalances[appName] = (walletRealBalances[appName] || 0) + t.nominal;
+      }
+    }
+  });
+  wallets.forEach(w => {
+    const wNameUpper = getWalletName(w, walletsFull).trim().toUpperCase();
+    walletRealBalances[w] = walletRealBalances[wNameUpper] || 0;
+  });
 
   const getIconForWallet = (name: string) => {
     const n = name.toUpperCase()
@@ -544,30 +560,73 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {wallets.map((wallet) => {
                 const wName = getWalletName(wallet, walletsFull);
+                const isDigitalWallet = wallet !== 'Bank08' && wallet !== 'Bank09';
+                const hasReal = isDigitalWallet && walletRealBalances[wallet] !== undefined;
+                const realVal = walletRealBalances[wallet] || 0;
+                const bookVal = walletBalances[wallet] || 0;
+                const diff = realVal - bookVal;
+
                 return (
-                  <div key={wallet} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-4 group">
-                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center flex-shrink-0 shadow-inner">
-                        <i className={cn("fa-solid text-xl", getIconForWallet(wName))}></i>
+                  <div key={wallet} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between gap-3 group relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-4 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-shrink-0 shadow-inner">
+                          <i className={cn("fa-solid text-base", getIconForWallet(wName))}></i>
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-0.5 truncate">{wName}</h4>
+                          <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{formatRupiah(bookVal)}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5 truncate">{wName}</h4>
-                        <p className="text-sm font-black text-slate-800 truncate">{formatRupiah(walletBalances[wallet] || 0)}</p>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setAdjustWalletId(wallet);
+                          setAdjustType('tambah');
+                          setAdjustNominal('');
+                          setAdjustKeterangan('');
+                          setShowAdjustModal(true);
+                        }}
+                        className="w-8 h-8 rounded-full bg-slate-50 hover:bg-indigo-50 dark:bg-slate-900 dark:hover:bg-indigo-950 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-all active:scale-95 shrink-0 border border-slate-100 dark:border-slate-800"
+                        title="Penyesuaian Saldo Buku"
+                      >
+                        <i className="fa-solid fa-scale-balanced text-xs"></i>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        setAdjustWalletId(wallet);
-                        setAdjustType('tambah');
-                        setAdjustNominal('');
-                        setAdjustKeterangan('');
-                        setShowAdjustModal(true);
-                      }}
-                      className="w-8 h-8 rounded-full bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-all active:scale-95 shrink-0"
-                      title="Penyesuaian Saldo"
-                    >
-                      <i className="fa-solid fa-scale-balanced text-sm"></i>
-                    </button>
+
+                    {isDigitalWallet && (
+                      <div className="pt-2.5 border-t border-slate-100/70 dark:border-slate-700/50 flex items-center justify-between gap-2 text-[10px]">
+                        <div className="flex flex-col text-left">
+                          <span className="text-[8px] font-black text-slate-400 uppercase">Saldo HP</span>
+                          {props.onUpdateSaldoReal ? (
+                            <button
+                              onClick={() => {
+                                setInputSaldoRealKeterangan(wName);
+                                setInputSaldoReal('');
+                                setShowSaldoRealModal(true);
+                              }}
+                              className="mt-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/30 dark:text-emerald-400 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 border border-emerald-200/50 dark:border-emerald-800/30 cursor-pointer"
+                            >
+                              <i className="fa-solid fa-plus-circle"></i>
+                              <span>{hasReal ? formatRupiah(realVal) : 'Isi Saldo HP'}</span>
+                            </button>
+                          ) : (
+                            <span className="font-extrabold text-slate-700 dark:text-slate-300 mt-0.5">
+                              {hasReal ? formatRupiah(realVal) : 'Belum Input'}
+                            </span>
+                          )}
+                        </div>
+                        {hasReal && (
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-lg font-black uppercase text-[8px] tracking-wide",
+                            diff === 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50" :
+                            diff > 0 ? "bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50" :
+                            "bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50"
+                          )}>
+                            {diff === 0 ? 'Klop' : diff > 0 ? `+${formatRupiah(diff)}` : formatRupiah(diff)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -630,7 +689,8 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
                       {props.onUpdateSaldoReal && (
                         <button
                           onClick={() => {
-                            setInputSaldoReal(props.saldoReal ? formatRupiah(props.saldoReal).replace('Rp ', '') : '');
+                            setInputSaldoReal('');
+                            setInputSaldoRealKeterangan('');
                             setShowSaldoRealModal(true);
                           }}
                           className="w-full border border-emerald-200 hover:border-emerald-400 bg-white rounded-xl p-2.5 flex items-center justify-between shadow-sm cursor-pointer transition-all active:scale-[0.98] group"
@@ -1385,6 +1445,11 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
           </div>
           
           <div className="p-6 space-y-5">
+            {inputSaldoRealKeterangan && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 p-3.5 rounded-2xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/50">
+                Saldo HP {inputSaldoRealKeterangan} saat ini: <span className="font-black">{formatRupiah(walletRealBalances[inputSaldoRealKeterangan.trim().toUpperCase()] || 0)}</span>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">Keterangan Aplikasi</label>
               <div className="relative">
@@ -1393,10 +1458,13 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
                   onChange={(e) => setInputSaldoRealKeterangan(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none cursor-pointer"
                 >
-                  <option value="" disabled>Pilih Aplikasi/Bank...</option>
-                  {getCategories().filter(id => id !== 'Bank08' && id !== 'Bank09').map(id => (
-                    <option key={id} value={getWalletName(id, walletsFull)}>{getWalletName(id, walletsFull)}</option>
-                  ))}
+                  <option value="" disabled>Pilih Kategori Aktif...</option>
+                  {wallets.filter(id => id !== 'Bank08' && id !== 'Bank09').map(id => {
+                    const wName = getWalletName(id, walletsFull);
+                    return (
+                      <option key={id} value={wName}>{wName}</option>
+                    );
+                  })}
                 </select>
                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
               </div>
@@ -1410,10 +1478,7 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
                   type="text"
                   inputMode="numeric"
                   value={inputSaldoReal}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, '');
-                    setInputSaldoReal(raw ? formatRupiah(parseInt(raw, 10)) : '');
-                  }}
+                  onChange={(e) => setInputSaldoReal(formatInputRupiah(e.target.value))}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-4 text-lg font-black text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   placeholder="0"
                 />

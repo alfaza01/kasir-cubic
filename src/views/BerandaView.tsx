@@ -1347,26 +1347,43 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
 
       {props.kasirRole === 'owner' && !props.isPc && !isOwnerSubView && (
         <div className="px-1.5 mb-8">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 mb-6 shadow-lg shadow-orange-200/50 flex items-center gap-4 border-b-4 border-orange-600/20">
+          <div 
+            onClick={() => props.setActiveView('view-lisensi')}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 mb-6 shadow-lg shadow-orange-200/50 flex items-center gap-4 border-b-4 border-orange-600/20 cursor-pointer active:scale-95 transition-all"
+          >
             <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/30 shadow-inner">
-              <i className="fa-solid fa-shield-halved text-2xl"></i>
+              <i className="fa-solid fa-key text-2xl"></i>
             </div>
             <div>
-              <h3
-                onClick={() => {
-                  const newTap = secretTap + 1;
-                  setSecretTap(newTap);
-                  if (newTap >= 7) {
-                    props.setActiveView('view-admin');
-                    setSecretTap(0);
-                  }
-                }}
-                className="font-black text-white text-xl tracking-tight leading-none select-none cursor-pointer"
-              >
-                Panel Owner
+              <h3 className="font-black text-white text-xl tracking-tight leading-none select-none">
+                AKTIVASI LISENSI
               </h3>
-              <p className="text-white/80 text-[11px] font-bold mt-1.5 uppercase tracking-widest">Kelola semua data toko</p>
+              <p className="text-white/80 text-[11px] font-bold mt-1.5 uppercase tracking-widest">Kelola Langganan Aplikasi</p>
             </div>
+          </div>
+
+          <div className="mb-4">
+            <h3 
+              onClick={() => {
+                const count = (window as any).secretTapCount || 0;
+                if (count + 1 >= 7) {
+                  (window as any).secretTapCount = 0;
+                  props.setActiveView('view-admin');
+                } else {
+                  (window as any).secretTapCount = count + 1;
+                  // reset tap count if idle for a bit
+                  clearTimeout((window as any).secretTapTimer);
+                  (window as any).secretTapTimer = setTimeout(() => {
+                    (window as any).secretTapCount = 0;
+                  }, 2000);
+                }
+              }}
+              className="font-black text-slate-800 text-lg tracking-tight uppercase px-1 cursor-pointer select-none"
+            >
+              PANEL OWNER
+            </h3>
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 mb-3 px-1">Kelola semua data toko</p>
+            <div className="w-full h-px bg-slate-200 mb-4"></div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -1382,8 +1399,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               { id: 'view-owner-backup', title: 'Backup', desc: 'Backup & reset', icon: 'fa-database', color: 'bg-red-600' },
               { id: 'view-owner-catatan', title: 'Catatan', desc: 'Catatan penting', icon: 'fa-clipboard', color: 'bg-yellow-600' },
               { id: 'view-owner-keamanan', title: 'Keamanan', desc: 'Pengaturan PIN', icon: 'fa-shield-halved', color: 'bg-slate-700' },
-              { id: 'view-akun', title: 'Setting', desc: 'Identitas & App', icon: 'fa-gear', color: 'bg-slate-600' },
-              { id: 'view-admin', title: 'Lisensi', desc: 'Aktivasi App', icon: 'fa-key', color: 'bg-amber-600' },
+              { id: 'view-akun', title: 'Setting', desc: 'Identitas & App', icon: 'fa-gear', color: 'bg-slate-600' }
             ].map((item) => (
               <button 
                 key={item.id}

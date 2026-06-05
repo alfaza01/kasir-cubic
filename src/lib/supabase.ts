@@ -19,6 +19,7 @@ class QueryChain {
   filters: Array<{ field: string; operator: string; value: any }> = []
   orderBy: { field: string; ascending: boolean } | null = null
   limitCount: number | null = null
+  updateData: any = null
 
   constructor(table: string) {
     this.table = table
@@ -51,6 +52,31 @@ class QueryChain {
   async getResult(singleMode: 'maybeSingle' | 'single' | 'many' = 'many'): Promise<{ data: any; error: any }> {
     try {
       let items = JSON.parse(localStorage.getItem(`cubic_db_${this.table}`) || '[]')
+      
+      if (this.updateData !== null) {
+        const updates = this.updateData
+        this.updateData = null
+        const updated: any[] = []
+        items = items.map((item: any) => {
+          let match = true
+          for (const filter of this.filters) {
+            if (filter.operator === 'eq' && item[filter.field] !== filter.value) {
+              match = false
+            } else if (filter.operator === 'neq' && item[filter.field] === filter.value) {
+              match = false
+            }
+          }
+          if (match) {
+            const newItem = { ...item, ...updates }
+            updated.push(newItem)
+            return newItem
+          }
+          return item
+        })
+        localStorage.setItem(`cubic_db_${this.table}`, JSON.stringify(items))
+        const resData = singleMode === 'many' ? updated : (updated.length > 0 ? updated[0] : null)
+        return { data: resData, error: null }
+      }
       
       // Khusus untuk lisensi, buat 1 lisensi demo secara otomatis jika tabel kosong agar tidak macet
       if (this.table === 'cubic_licenses' && items.length === 0) {
@@ -171,41 +197,8 @@ class QueryChain {
   }
 
   update(updates: any) {
-    try {
-      let items = JSON.parse(localStorage.getItem(`cubic_db_${this.table}`) || '[]')
-      const updated: any[] = []
-      
-      items = items.map((item: any) => {
-        let match = true
-        for (const filter of this.filters) {
-          if (filter.operator === 'eq' && item[filter.field] !== filter.value) {
-            match = false
-          } else if (filter.operator === 'neq' && item[filter.field] === filter.value) {
-            match = false
-          }
-        }
-        if (match) {
-          const newItem = { ...item, ...updates }
-          updated.push(newItem)
-          return newItem
-        }
-        return item
-      })
-
-      localStorage.setItem(`cubic_db_${this.table}`, JSON.stringify(items))
-      
-      const chainResult: any = {
-        data: updated,
-        error: null,
-        select: () => chainResult,
-        single: async () => ({ data: updated[0], error: null }),
-        maybeSingle: async () => ({ data: updated[0], error: null }),
-        then: (onfulfilled: any) => onfulfilled({ data: updated, error: null })
-      }
-      return chainResult
-    } catch (err: any) {
-      return { data: null, error: err, select: () => ({ then: (cb: any) => cb({data: null, error: err}) }) } as any
-    }
+    this.updateData = updates
+    return this
   }
 
   delete() {

@@ -20,28 +20,36 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
   ])
   const [loading, setLoading] = useState(false)
   const [genDeviceId, setGenDeviceId] = useState('')
-  const [genPackage, setGenPackage] = useState<keyof typeof LICENSE_PACKAGES>('STARTER')
+  const [genPackage, setGenPackage] = useState<keyof typeof LICENSE_PACKAGES>('PEMULA')
   const [generatedCode, setGeneratedCode] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [waNumber, setWaNumber] = useState('6281234567890')
   const [genCustomerName, setGenCustomerName] = useState('')
   const [clientRegistry, setClientRegistry] = useState<any[]>([])
+  const [adminTab, setAdminTab] = useState<'lisensi' | 'properti'>('lisensi')
+  const [userFeedbacks, setUserFeedbacks] = useState<any[]>([])
 
   React.useEffect(() => {
-    const savedWa = localStorage.getItem('cubic_owner_wa');
-    if (savedWa) setWaNumber(savedWa);
-    const savedReg = localStorage.getItem('cubic_client_registry');
-    if (savedReg) {
-      try { setClientRegistry(JSON.parse(savedReg)) } catch(e){}
+    if (active) {
+      const savedWa = localStorage.getItem('cubic_owner_wa');
+      if (savedWa) setWaNumber(savedWa);
+      const savedReg = localStorage.getItem('cubic_client_registry');
+      if (savedReg) {
+        try { setClientRegistry(JSON.parse(savedReg)) } catch(e){}
+      }
+      const savedFb = localStorage.getItem('cubic_user_feedbacks');
+      if (savedFb) {
+        try { setUserFeedbacks(JSON.parse(savedFb)) } catch(e){}
+      }
     }
-  }, []);
+  }, [active]);
 
   if (!active) return null
 
   if (!isAuthenticated) {
     return (
-      <div className={cn(`flex-1 flex flex-col items-center justify-center h-full bg-slate-950 font-sans text-white ${isPc ? 'p-6' : 'p-4'}`, !active && "hidden")}>
+      <div className={cn(`flex flex-col items-center justify-center bg-slate-950 font-sans text-white ${isPc ? 'flex-1 h-full p-6' : 'fixed inset-0 z-[200] p-4'}`, !active && "hidden")}>
         <div className="w-full max-w-sm bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col items-center">
           <div className="w-12 h-12 bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-4">
             <Shield size={24} />
@@ -110,7 +118,7 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
   }
 
   return (
-    <div className={cn(`flex-1 flex flex-col h-full overflow-hidden bg-slate-950 font-sans text-white ${isPc ? 'p-6' : 'p-4'}`, !active && "hidden")}>
+    <div className={cn(`flex flex-col overflow-hidden bg-slate-950 font-sans text-white ${isPc ? 'flex-1 h-full p-6' : 'fixed inset-0 z-[200] p-4'}`, !active && "hidden")}>
       {/* Top Bar */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
@@ -136,10 +144,67 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6 shrink-0">
+        <button 
+          onClick={() => setAdminTab('lisensi')}
+          className={cn("flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", adminTab === 'lisensi' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-slate-900 border border-slate-800 text-slate-500 hover:bg-slate-800')}
+        >
+          Akses Lisensi
+        </button>
+        <button 
+          onClick={() => setAdminTab('properti')}
+          className={cn("flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", adminTab === 'properti' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-slate-900 border border-slate-800 text-slate-500 hover:bg-slate-800')}
+        >
+          Properti Admin
+        </button>
+      </div>
+
       {/* Main Content Areas */}
-      <div className="flex-1 overflow-y-auto space-y-6 hide-scrollbar pb-10">
-        {/* Diagnostics Card */}
-        <div className={cn("grid gap-4", isPc ? "grid-cols-2" : "grid-cols-1")}>
+      <div className="flex-1 overflow-y-auto space-y-6 hide-scrollbar pb-32">
+        {adminTab === 'properti' && (
+          <>
+            {/* User Suggestions */}
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                  <Terminal size={12} className="text-blue-500" />
+                  <span>Pesan & Saran Pengguna</span>
+                </h4>
+                <button
+                  onClick={() => {
+                    if (confirm('Bersihkan semua riwayat pesan?')) {
+                      localStorage.removeItem('cubic_user_feedbacks');
+                      setUserFeedbacks([]);
+                    }
+                  }}
+                  className="text-[8px] bg-red-950/40 text-red-400 hover:bg-red-900 hover:text-white px-2 py-1.5 rounded-md transition-all font-bold uppercase"
+                >
+                  Bersihkan
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {userFeedbacks.length > 0 ? (
+                  userFeedbacks.map((fb: any) => (
+                    <div key={fb.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/30 px-2 py-0.5 rounded uppercase">{fb.user}</span>
+                        <span className="text-[9px] text-slate-500 font-semibold">{new Date(fb.date).toLocaleString('id-ID')}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 font-medium whitespace-pre-wrap leading-relaxed">{fb.text}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-slate-500 text-xs font-bold bg-slate-950/50 rounded-xl border border-slate-800/50">
+                    Belum ada pesan atau saran dari pengguna.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Diagnostics Card */}
+            <div className={cn("grid gap-4", isPc ? "grid-cols-2" : "grid-cols-1")}>
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
               <Database size={12} className="text-blue-500" />
@@ -212,8 +277,12 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
             </div>
           </div>
         </div>
+        </>
+        )}
 
-        {/* License Generator Card */}
+        {adminTab === 'lisensi' && (
+          <>
+            {/* License Generator Card */}
         <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2">
             <Key size={12} className="text-amber-500" />
@@ -250,10 +319,10 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
                     onChange={e => setGenPackage(e.target.value as any)}
                     className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white uppercase font-bold focus:outline-none"
                   >
-                    <option value="STARTER">STARTER (30 Hari)</option>
-                    <option value="BRONZE">BRONZE (5 Bulan)</option>
-                    <option value="GOLD">GOLD (1 Tahun)</option>
-                    <option value="DIAMOND">DIAMOND (Selamanya)</option>
+                    <option value="PEMULA">PEMULA (1 Bulan)</option>
+                    <option value="PAKET_2">PAKET 2 (4 Bulan)</option>
+                    <option value="PAKET_3">PAKET 3 (1 Tahun)</option>
+                    <option value="LIFETIME">LIFETIME (Selamanya)</option>
                   </select>
                 </div>
               </div>
@@ -352,28 +421,34 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
             )}
           </div>
         </div>
+        </>
+      )}
 
-        {/* Diagnostic Metadata Grid */}
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
-          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <CheckCircle size={12} className="text-emerald-500" />
-            <span>Platform Capabilities</span>
-          </h4>
+      {adminTab === 'properti' && (
+        <>
+          {/* Diagnostic Metadata Grid */}
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle size={12} className="text-emerald-500" />
+              <span>Platform Capabilities</span>
+            </h4>
 
-          <div className={cn("grid gap-3", isPc ? "grid-cols-4" : "grid-cols-2")}>
-            {[
-              { label: 'Environment', value: 'Production Web v1.1' },
-              { label: 'Capacitor', value: 'Active / Core v8' },
-              { label: 'Supabase Sync', value: 'Active / Schema-v2' },
-              { label: 'Theme Framework', value: 'Tailwind v4' }
-            ].map((meta, i) => (
-              <div key={i} className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl">
-                <span className="text-[7px] text-slate-500 font-extrabold uppercase tracking-widest block leading-none mb-1.5">{meta.label}</span>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-tight">{meta.value}</span>
-              </div>
-            ))}
+            <div className={cn("grid gap-3", isPc ? "grid-cols-4" : "grid-cols-2")}>
+              {[
+                { label: 'Environment', value: 'Production Web v1.1' },
+                { label: 'Capacitor', value: 'Active / Core v8' },
+                { label: 'Supabase Sync', value: 'Active / Schema-v2' },
+                { label: 'Theme Framework', value: 'Tailwind v4' }
+              ].map((meta, i) => (
+                <div key={i} className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl">
+                  <span className="text-[7px] text-slate-500 font-extrabold uppercase tracking-widest block leading-none mb-1.5">{meta.label}</span>
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-tight">{meta.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
+      )}
       </div>
     </div>
   )

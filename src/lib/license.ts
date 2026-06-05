@@ -13,10 +13,10 @@ function simpleHash(str: string): number {
 
 // Packages definition
 export const LICENSE_PACKAGES = {
-  'STARTER': 30, // days
-  'BRONZE': 150,
-  'GOLD': 365,
-  'DIAMOND': 36500 // lifetime
+  'PEMULA': 30, // 1 bulan
+  'PAKET_2': 120, // 4 bulan
+  'PAKET_3': 365, // 1 tahun
+  'LIFETIME': 36500 // lifetime
 }
 
 /**
@@ -84,6 +84,14 @@ export type LicenseStatus =
   | { state: 'EXPIRED'; reason: string }
 
 export function checkAppLicenseStatus(): LicenseStatus {
+  // Ensure deviceId exists
+  let deviceId = localStorage.getItem('cubic_device_id')
+  if (!deviceId) {
+    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase()
+    deviceId = `CUB-${randomHex}`
+    localStorage.setItem('cubic_device_id', deviceId)
+  }
+
   const now = Date.now();
   
   // Anti-cheat: Check if clock was moved backwards
@@ -126,7 +134,7 @@ export function checkAppLicenseStatus(): LicenseStatus {
   const trialExpiresAt = installDate + (trialDays * 24 * 60 * 60 * 1000);
   
   if (now > trialExpiresAt) {
-    return { state: 'EXPIRED', reason: 'Masa percobaan (Trial 7 Hari) telah habis.' };
+    return { state: 'EXPIRED', reason: 'Masa percobaan (Trial 7 Hari) telah habis. Silakan aktivasi lisensi.' };
   }
   
   const trialDaysLeft = Math.ceil((trialExpiresAt - now) / (1000 * 60 * 60 * 24));

@@ -212,7 +212,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
   
   let saldoLaciKasir = 0;
   const walletBalances: Record<string, number> = {};
-  const saldoRealMap: Record<string, { value: number, time: string }> = {};
+  const saldoRealMap: Record<string, number> = {};
 
   txs.forEach(t => {
     // Basic volume and transaction counts for purely informative stats
@@ -230,9 +230,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     }
     if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
       const appName = ket || 'UNKNOWN';
-      if (!saldoRealMap[appName] || t.timestamp > saldoRealMap[appName].time) {
-        saldoRealMap[appName] = { value: t.nominal, time: t.timestamp };
-      }
+      saldoRealMap[appName] = (saldoRealMap[appName] || 0) + t.nominal;
     }
     
     let sumber = t.sumber_dana ? resolveWalletId(t.sumber_dana) : null;
@@ -313,7 +311,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     }
   });
 
-  saldoReal = Object.values(saldoRealMap).reduce((sum, item) => sum + item.value, 0);
+  saldoReal = Object.values(saldoRealMap).reduce((sum, val) => sum + val, 0);
 
   // Saldo Laci Kasir strictly tied to the wallet balance calculation!
   saldoLaciKasir = walletBalances['Bank08'] || 0;

@@ -346,18 +346,18 @@ const App: React.FC = () => {
   }
 
   // ── LOCK KASIR IF EXPIRED ──
-  if (appLicenseStatus?.state === 'EXPIRED' && selectedRole === 'kasir') {
+  if (appLicenseStatus?.state === 'EXPIRED' && selectedRole === 'kasir' && activeView !== 'view-admin') {
     return (
       <div className="relative w-screen h-screen">
         <button 
           onClick={handleExitStore} 
           className="absolute top-4 right-4 z-[9999] bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-red-600 border border-red-100 hover:bg-red-50 transition-all shadow-md"
         >
-          {isLoggedIn ? 'Logout Kasir' : 'Kembali'}
+          {isLoggedIn ? 'Logout' : 'Kembali'}
         </button>
         <LicenseScreen 
           onValid={() => setAppLicenseStatus(checkAppLicenseStatus())} 
-          onSecretTap={() => window.location.hash = '#/admin'}
+          onSecretTap={() => setActiveView('view-admin')}
         />
       </div>
     );
@@ -483,7 +483,8 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-admin': 'admin'
+      'view-admin': 'admin',
+      'view-lisensi': 'lisensi'
     }
     const hashToView: Record<string, string> = Object.fromEntries(
       Object.entries(viewToHash).map(([v, h]) => [h, v])
@@ -528,7 +529,8 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-admin': 'admin'
+      'view-admin': 'admin',
+      'view-lisensi': 'lisensi'
     }
     const hash = viewToHash[activeView] || activeView.replace('view-', '')
     if (window.location.hash !== `#/${hash}`) {
@@ -2321,6 +2323,10 @@ const MainApp: React.FC<MainAppProps> = ({
                       kasirRole={account.role}
                       setIsSidePanelOpen={setIsSidePanelOpen}
                       onTriggerSync={handleUploadToCloud}
+                      saldoBank={saldoBank}
+                      saldoReal={totalSaldoReal}
+                      onUpdateSaldoReal={handleSimpanSaldoRealAplikasi}
+                      isSaving={isSaving}
                     />
                   );
                 case 'view-kasbon':
@@ -2358,6 +2364,14 @@ const MainApp: React.FC<MainAppProps> = ({
                       active={true}
                       isPc={screenSize === 'pc'}
                       setActiveView={setActiveView}
+                    />
+                  );
+                case 'view-lisensi':
+                  return (
+                    <LicenseScreen
+                      onValid={() => setAppLicenseStatus(checkAppLicenseStatus())}
+                      onSecretTap={() => setActiveView('view-admin')}
+                      onBack={() => setActiveView('view-beranda')}
                     />
                   );
                 case 'view-owner-monitor':
@@ -2618,6 +2632,10 @@ const MainApp: React.FC<MainAppProps> = ({
             currentUsername={username}
             onConfirm={handleConfirm}
             activeStoreId={targetStoreId}
+            saldoBank={saldoBank}
+            saldoReal={totalSaldoReal}
+            onUpdateSaldoReal={handleSimpanSaldoRealAplikasi}
+            isSaving={isSaving}
           />
 
           <KasbonView active={activeView === 'view-kasbon'} isPc={screenSize === 'pc'} setActiveView={setActiveView} kasirName={account.name} showToast={showToast} onConfirm={handleConfirm} activeStoreId={targetStoreId} />
@@ -2647,6 +2665,14 @@ const MainApp: React.FC<MainAppProps> = ({
               isPc={screenSize === 'pc'} 
               setActiveView={setActiveView} 
             />
+
+          {activeView === 'view-lisensi' && (
+            <LicenseScreen
+              onValid={() => setAppLicenseStatus(checkAppLicenseStatus())}
+              onSecretTap={() => setActiveView('view-admin')}
+              onBack={() => setActiveView('view-beranda')}
+            />
+          )}
 
           {!(activeRole === 'owner' && !pantauStoreId) && (
             <Navigation activeView={activeView} setActiveView={setActiveView} />

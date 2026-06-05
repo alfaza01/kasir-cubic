@@ -188,6 +188,20 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
     return () => window.removeEventListener('alphaSyncUpdate', handleSync)
   }, [])
 
+  const walletRealBalances = useMemo(() => {
+    const balances: Record<string, number> = {};
+    props.transactions.forEach(t => {
+      const katLower = t.kategori.toLowerCase();
+      if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
+        const appName = (t.keterangan || '').trim().toUpperCase();
+        if (appName) {
+          balances[appName] = (balances[appName] || 0) + t.nominal;
+        }
+      }
+    });
+    return balances;
+  }, [props.transactions]);
+
   const { totalQtyLaku, totalUangKeseluruhan, totalUangQris } = useMemo(() => {
     if (!props.activeStoreId) {
       return { totalQtyLaku: 0, totalUangKeseluruhan: 0, totalUangQris: 0 }
@@ -1060,7 +1074,11 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
                 </div>
                 {props.onUpdateSaldoReal && (
                   <button
-                    onClick={() => setShowSaldoRealModal(true)}
+                    onClick={() => {
+                      setInputSaldoReal('');
+                      setInputSaldoRealKeterangan('');
+                      setShowSaldoRealModal(true);
+                    }}
                     className="w-full mt-2.5 border-2 border-dashed border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-400 bg-white dark:bg-slate-900/40 rounded-2xl p-3 flex items-center justify-between shadow-sm cursor-pointer transition-all active:scale-[0.98] group text-left"
                     style={{ cursor: 'pointer' }}
                   >
@@ -1215,6 +1233,11 @@ const LaporanView: React.FC<LaporanViewProps> = (props) => {
               </div>
               
               <div className="p-6 space-y-5">
+                {inputSaldoRealKeterangan && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 p-3.5 rounded-2xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/50">
+                    Saldo HP {inputSaldoRealKeterangan} saat ini: <span className="font-black">{formatRupiah(walletRealBalances[inputSaldoRealKeterangan.trim().toUpperCase()] || 0)}</span>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">Keterangan Aplikasi</label>
                   <div className="relative">
