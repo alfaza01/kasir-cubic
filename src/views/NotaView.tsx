@@ -9,12 +9,14 @@ interface NotaItem {
   jumlah: string;
 }
 
-const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; showToast: (m: string) => void; onConfirm: (t: string, m: string, c: () => void) => void; isPc?: boolean; storeName?: string; storeAddress?: string; activeStoreId?: string; }> = ({ active, setActiveView, isPc, storeName, storeAddress, activeStoreId }) => {
+const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; showToast: (m: string) => void; onConfirm: (t: string, m: string, c: () => void) => void; isPc?: boolean; storeName?: string; storeAddress?: string; activeStoreId?: string; }> = ({ active, setActiveView, showToast, isPc, storeName, storeAddress, activeStoreId }) => {
   
   const [items, setItems] = useState<NotaItem[]>([]);
   const [currentItem, setCurrentItem] = useState<NotaItem>({ nama: "", harga: "", jumlah: "" });
   const [tanggal, setTanggal] = useState(getLocalISOString().split('T')[0]);
   const [ukuranKertas, setUkuranKertas] = useState<'58mm'|'80mm'>('58mm');
+  const [pasteMode, setPasteMode] = useState(false);
+  const [bulkText, setBulkText] = useState("");
   
   const [posProducts, setPosProducts] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -63,6 +65,22 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
     if (!currentItem.nama || !currentItem.harga || !currentItem.jumlah) return;
     setItems([...items, currentItem]);
     setCurrentItem({ nama: "", harga: "", jumlah: "" });
+  };
+
+  const handleBulkPaste = () => {
+    if (!bulkText.trim()) return;
+    const lines = bulkText.split('\n').filter(l => l.trim() !== '');
+    const newItems = lines.map(line => {
+       const match = line.match(/(.+?)\s+(?:Rp\.?\s*)?([\d.,]+)$/i);
+       if (match) {
+           return { nama: match[1].trim(), harga: match[2].replace(/[^\d]/g, ''), jumlah: "1" };
+       }
+       return { nama: line.trim(), harga: "0", jumlah: "1" };
+    });
+    setItems([...items, ...newItems]);
+    setBulkText("");
+    setPasteMode(false);
+    showToast(`${newItems.length} item berhasil dipaste!`);
   };
 
   const removeItem = (index: number) => {
@@ -157,8 +175,26 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
 
 
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
-              <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-700">Input Data Barang/Jasa</h4>
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
+                <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">Input Data Barang/Jasa</h4>
+                <button onClick={() => setPasteMode(!pasteMode)} className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                   {pasteMode ? 'Input Manual' : 'Paste Masal'}
+                </button>
+              </div>
               
+              {pasteMode ? (
+                <div className="space-y-4">
+                  <textarea 
+                     value={bulkText} 
+                     onChange={e => setBulkText(e.target.value)}
+                     placeholder="Baju Anak 50000&#10;Celana 100000"
+                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-mono h-32 outline-none"
+                  />
+                  <button onClick={handleBulkPaste} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black py-3.5 rounded-xl shadow-md transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: '#ffffff' }}>
+                    <Plus className="w-3.5 h-3.5" /> Proses Paste
+                  </button>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div>
                   <label className="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tanggal Transaksi</label>
@@ -239,6 +275,7 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
                   <Plus className="w-3.5 h-3.5" /> Tambah ke Daftar
                 </button>
               </div>
+              )}
             </div>
 
           </div>
@@ -377,10 +414,28 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
 
       <div className="p-5">
         <div className="p-4 shadow-sm border border-gray-200 rounded-xl bg-white space-y-3">
-          <h3 className="font-black text-black text-[11px] mb-3 flex items-center gap-2 uppercase tracking-tighter">
-            <i className="fa-solid fa-file-invoice text-blue-700"></i> INPUT DATA NOTA
-          </h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-black text-black text-[11px] flex items-center gap-2 uppercase tracking-tighter">
+              <i className="fa-solid fa-file-invoice text-blue-700"></i> INPUT DATA NOTA
+            </h3>
+            <button onClick={() => setPasteMode(!pasteMode)} className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">
+               {pasteMode ? 'Input Manual' : 'Paste Masal'}
+            </button>
+          </div>
           
+          {pasteMode ? (
+            <div className="space-y-3">
+              <textarea 
+                 value={bulkText} 
+                 onChange={e => setBulkText(e.target.value)}
+                 placeholder="Baju Anak 50000&#10;Celana 100000"
+                 className="form-input-modern w-full h-32 font-mono text-xs"
+              />
+              <button onClick={handleBulkPaste} className="w-full bg-blue-600 text-white font-black py-3 rounded-xl shadow-md active:scale-95 flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> Proses Paste
+              </button>
+            </div>
+          ) : (
           <div className="space-y-3">
             <div>
               <label className="block text-[9px] font-black text-black mb-1 uppercase tracking-widest">TANGGAL TRANSAKSI</label>
@@ -453,10 +508,14 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
               </div>
             </div>
 
-            <button onClick={handleSimpanItem} className="w-full bg-blue-700 text-white text-[10px] font-black py-2.5 rounded-lg hover:bg-blue-800 shadow-md transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2">
-              <Plus className="w-3.5 h-3.5" /> TAMBAH KE DAFTAR
+            <button 
+              onClick={handleSimpanItem} 
+              className="w-full bg-blue-600 text-white font-black py-3 rounded-xl shadow-md active:scale-95 flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> TAMBAH KE DAFTAR
             </button>
           </div>
+          )}
 
           <div className="space-y-3 pt-6 border-t border-gray-100">
             <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Daftar Belanja</h4>

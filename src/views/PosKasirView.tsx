@@ -58,6 +58,7 @@ export default function PosKasirView({ active, isPc, setActiveView, showToast, o
   const [fStock, setFStock] = useState('');
   const [fMinStock, setFMinStock] = useState('5');
   const [saving, setSaving] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [tambahTab, setTambahTab] = useState<'single' | 'bulk'>('single');
   const [bulkText, setBulkText] = useState('');
   
@@ -364,6 +365,84 @@ export default function PosKasirView({ active, isPc, setActiveView, showToast, o
     );
   }
 
+  // ── HALAMAN CETAK PREVIEW ──
+  if (showPrintPreview && lastTx) {
+    const renderReceipt = () => (
+      <div className="bg-white text-black font-mono text-[12px] leading-[1.2] w-[58mm] p-[2mm] mx-auto">
+         <div className="text-center mb-2">
+            <h2 className="font-bold text-[14px] leading-tight">{storeName || 'POS KASIR'}</h2>
+            <p className="text-[10px] whitespace-pre-wrap">{storeAddress || 'Toko Anda'}</p>
+         </div>
+         <div className="text-[10px] mb-2 border-b border-black border-dashed pb-2">
+            <div className="flex justify-between"><span>Waktu:</span><span>{new Date().toLocaleString('id-ID', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short' })}</span></div>
+            <div className="flex justify-between"><span>Kasir:</span><span>{kasirName}</span></div>
+            <div className="flex justify-between"><span>Trx ID:</span><span>{lastTx.id ? lastTx.id.slice(0, 8) : 'NEW'}</span></div>
+         </div>
+         <div className="border-b border-dashed border-black mb-1 pb-1">
+            {lastTx.items.map((it: any, idx: number) => (
+               <div key={idx} className="mb-1">
+                  <div className="font-bold">{it.name}</div>
+                  <div className="flex justify-between">
+                     <span>{it.qty}x {fmt(it.price)}</span>
+                     <span>{fmt(it.qty * it.price)}</span>
+                  </div>
+               </div>
+            ))}
+         </div>
+         <div className="flex justify-between font-bold">
+            <span>TOTAL</span>
+            <span>{fmt(lastTx.grandTotal)}</span>
+         </div>
+         <div className="flex justify-between">
+            <span>TUNAI</span>
+            <span>{fmt(lastTx.paid)}</span>
+         </div>
+         <div className="flex justify-between">
+            <span>KEMBALI</span>
+            <span>{fmt(lastTx.change)}</span>
+         </div>
+         <div className="text-center mt-3 text-[10px]">
+            <p>Terima Kasih</p>
+         </div>
+      </div>
+    );
+
+    return (
+      <div className="absolute inset-0 z-[100] bg-slate-200 overflow-y-auto pb-20">
+        <div className="sticky top-0 left-0 right-0 p-4 flex justify-between z-50 no-print bg-slate-900 shadow-md">
+          <button onClick={() => setShowPrintPreview(false)} className="px-5 py-2.5 bg-white/10 text-white rounded-full font-bold flex items-center gap-2 active:scale-95">
+            <i className="fa-solid fa-arrow-left"></i> KEMBALI
+          </button>
+          <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-black shadow-xl flex items-center gap-2 active:scale-95">
+            <i className="fa-solid fa-print"></i> CETAK
+          </button>
+        </div>
+        <div className="pt-8 px-4 flex justify-center no-print">
+           <div className="shadow-2xl">{renderReceipt()}</div>
+        </div>
+        <div className="hidden print:block w-full thermal-print-area">
+           {renderReceipt()}
+        </div>
+        <style>{`
+          @media print {
+            @page { margin: 20mm; size: auto; }
+            body { margin: 0; padding: 0; background: white !important; display: flex !important; justify-content: center !important; align-items: flex-start !important; }
+            body * { visibility: hidden; }
+            .thermal-print-area, .thermal-print-area * { visibility: visible; }
+            .thermal-print-area {
+              position: static !important;
+              transform: none !important;
+              margin: 0 auto;
+              padding: 0;
+              width: auto;
+              display: block;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   // ── HALAMAN DAFTAR PRODUK ──
   if (page === 'produk') {
     return (
@@ -470,16 +549,9 @@ export default function PosKasirView({ active, isPc, setActiveView, showToast, o
                     return match ? { name: match[1], qty: Number(match[2]), price: 0 } : { name: i, qty: 1, price: 0 };
                   });
                   setLastTx({
-                    id: tx.id,
-                    items,
-                    grandTotal: tx.nominal,
-                    paid: tx.nominal,
-                    change: 0,
-                    payMethod,
-                    timestamp: tx.timestamp,
-                    kasirName: tx.kasir_id
+                    id: tx.id, items: tx.items, grandTotal: tx.total, paid: tx.payment_amount, change: tx.change_amount
                   });
-                  setTimeout(() => window.print(), 100);
+                  setShowPrintPreview(true);
                 }} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-black px-2 py-1 rounded-md flex items-center gap-1">
                   <i className="fa-solid fa-print" /> Cetak
                 </button>
@@ -628,7 +700,7 @@ export default function PosKasirView({ active, isPc, setActiveView, showToast, o
                   <p className="text-xl font-black">{fmt(lastTx.change)}</p>
                 </div>
                 <div className="flex w-full gap-3 mt-6">
-                  <button onClick={() => window.print()} className="flex-1 bg-blue-600 text-white font-black py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                  <button onClick={() => setShowPrintPreview(true)} className="flex-1 bg-blue-600 text-white font-black py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
                     <i className="fa-solid fa-print" /> Cetak Struk
                   </button>
                   <button onClick={() => { setLastTx(null); setShowCheckout(false); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3.5 rounded-2xl">
