@@ -71,9 +71,25 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
         walletBalances[sumber] -= tx.nominal;
       }
     }
+    
+    const ket = (tx.keterangan || '').toUpperCase();
+    const isAksesorisTx = tx.kategori === 'Aksesoris';
+    const isNonTunaiTx = ket.includes('[NON_TUNAI]') || (isAksesorisTx && (tx.tujuan_dana || '').toUpperCase().includes('PENAMPUNG'));
+    const adminFee = tx.admin_fee || tx.adminFee || 0;
+
     if (tujuan) {
       if (walletBalances[tujuan] !== undefined) {
-        walletBalances[tujuan] += (tx.nominal + (tx.adminFee || 0));
+        walletBalances[tujuan] += tx.nominal;
+      }
+    }
+    
+    if (isNonTunaiTx) {
+      if (walletBalances['Bank09'] !== undefined) {
+        walletBalances['Bank09'] += adminFee;
+      }
+    } else {
+      if (walletBalances['Bank08'] !== undefined) {
+        walletBalances['Bank08'] += adminFee;
       }
     }
   });
