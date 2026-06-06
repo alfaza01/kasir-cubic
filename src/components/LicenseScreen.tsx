@@ -95,7 +95,10 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
     { id: 1, title: 'Lisensi Diperiksa', description: `Sistem memeriksa status lisensi pada ${deviceId}.`, time: 'Baru saja', icon: Smartphone, color: 'text-blue-600', bgColor: 'bg-blue-50' },
   ];
 
-  const packages = [
+  type Feature = { text: string; included?: boolean; info?: boolean; infinite?: boolean; iconUsers?: boolean; };
+  type Package = { name: string; price: string; desc?: string; badge?: string; features: Feature[]; };
+
+  const packages: Package[] = [
     {
       name: 'Pemula',
       price: 'Rp 15.000',

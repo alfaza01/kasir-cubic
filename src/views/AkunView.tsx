@@ -21,9 +21,11 @@ interface AkunViewProps {
   onSaveMainAnnouncement: (text: string) => void
   storeName: string
   storeSubtext: string
+  storeAddress: string
   storePhoto?: string
   onSaveStoreName: (name: string) => void
   onSaveStoreSubtext: (subtext: string) => void
+  onSaveStoreAddress: (address: string) => void
   onSaveStorePhoto: (photo: string) => void
   setIsSidePanelOpen: (open: boolean) => void
   onConfirm: (title: string, message: string, onConfirm: () => void) => void
@@ -39,6 +41,7 @@ interface AkunViewProps {
 const AkunView: React.FC<AkunViewProps> = (props) => {
   const [storeNameInput, setStoreNameInput] = useState(props.storeName)
   const [storeSubtextInput, setStoreSubtextInput] = useState(props.storeSubtext)
+  const [storeAddressInput, setStoreAddressInput] = useState(props.storeAddress)
   const [storePhotoInput, setStorePhotoInput] = useState(props.storePhoto || '')
   
   const [selfName, setSelfName] = useState(props.kasirName || '')
@@ -70,6 +73,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
     if (!storeNameInput.trim()) return
     await props.onSaveStoreName(storeNameInput.trim())
     await props.onSaveStoreSubtext(storeSubtextInput.trim())
+    await props.onSaveStoreAddress(storeAddressInput.trim())
     await props.onSaveStorePhoto(storePhotoInput.trim())
     alert('Identitas Toko Berhasil Disimpan!')
   }
@@ -171,6 +175,16 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                           type="text"
                           value={storeSubtextInput}
                           onChange={e => setStoreSubtextInput(e.target.value)}
+                          className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider pl-1">Alamat Toko (Untuk Nota/Struk)</label>
+                        <input
+                          type="text"
+                          value={storeAddressInput}
+                          onChange={e => setStoreAddressInput(e.target.value)}
+                          placeholder="Cth: Jl. Raya Kemerdekaan No.1"
                           className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-sm font-bold text-slate-800"
                         />
                       </div>
@@ -485,7 +499,7 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
                         <p className="text-[9.5px] font-black text-emerald-800 uppercase tracking-widest mb-1">Sampaikan Masukan Anda</p>
                         <p className="text-[9px] text-emerald-600 font-semibold leading-relaxed">
-                          Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke tim developer CUBA melalui WhatsApp di bawah ini.
+                          Saran, kritik, atau permintaan fitur baru bisa langsung dikirim ke Panel Admin melalui formulir di bawah ini.
                         </p>
                       </div>
                       <div className="space-y-2 mt-2">

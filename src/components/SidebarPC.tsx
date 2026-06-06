@@ -98,6 +98,7 @@ const SidebarPC: React.FC<SidebarPCProps> = ({
             { id: 'view-kasbon', label: 'Kasbon', icon: 'fa-file-invoice' },
             { id: 'view-kontak', label: 'Kontak', icon: 'fa-address-book' },
             { id: 'view-stok-voucher', label: 'Voucher', icon: 'fa-ticket' },
+            { id: 'view-pos-kasir', label: 'POS Kasir', icon: 'fa-cash-register' },
             { id: 'view-kalender', label: 'Kalender', icon: 'fa-calendar-days' },
             { id: 'view-nota', label: 'Nota', icon: 'fa-receipt' },
           ].map((item) => {

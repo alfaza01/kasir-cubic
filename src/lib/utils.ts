@@ -222,11 +222,16 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     // We update stats specifically for informational displays (like cards)
     const isDigital = isDigitalPenjualan(t.kategori);
 
-    if (t.kategori === 'Isi Saldo Bank' || katLower === 'inject saldo') {
+    if (t.kategori === 'Isi Saldo Bank' || katLower === 'inject saldo' || (katLower.includes('modal awal') && t.tujuan_dana !== 'Bank08')) {
       isiBank += t.nominal;
-    } 
-    if (t.kategori === 'Isi Modal Tunai Kasir' || katLower.includes('modal awal') || katLower.includes('modal tunai')) {
+    } else if (t.kategori === 'Penarikan Saldo Bank') {
+      isiBank -= t.nominal;
+    }
+    
+    if (t.kategori === 'Isi Modal Tunai Kasir' || (katLower.includes('modal awal') && (!t.tujuan_dana || t.tujuan_dana === 'Bank08')) || (katLower.includes('modal tunai') && !katLower.includes('penarikan'))) {
       kasModal += t.nominal;
+    } else if (t.kategori === 'Penarikan Modal Tunai Kasir' || (katLower.includes('modal tunai') && katLower.includes('penarikan'))) {
+      kasModal -= t.nominal;
     }
     if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
       const appName = ket || 'UNKNOWN';

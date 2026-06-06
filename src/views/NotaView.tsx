@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ArrowLeft, Printer, Plus, Trash2 } from "lucide-react";
 import { formatRupiah, formatInputRupiah, parseNominal, getLocalISOString, cn } from "../lib/utils";
+import { supabase } from '../lib/supabase';
 
 interface NotaItem {
   nama: string;
@@ -8,14 +9,37 @@ interface NotaItem {
   jumlah: string;
 }
 
-const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; showToast: (m: string) => void; onConfirm: (t: string, m: string, c: () => void) => void; isPc?: boolean }> = ({ active, setActiveView, isPc }) => {
+const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; showToast: (m: string) => void; onConfirm: (t: string, m: string, c: () => void) => void; isPc?: boolean; storeName?: string; storeAddress?: string; activeStoreId?: string; }> = ({ active, setActiveView, isPc, storeName, storeAddress, activeStoreId }) => {
   
-  const [shopName, setShopName] = useState("Kasir Cuba");
-  const [address, setAddress] = useState("Jl. Merdeka No. 123, Indonesia");
   const [items, setItems] = useState<NotaItem[]>([]);
   const [currentItem, setCurrentItem] = useState<NotaItem>({ nama: "", harga: "", jumlah: "" });
   const [tanggal, setTanggal] = useState(getLocalISOString().split('T')[0]);
   const [ukuranKertas, setUkuranKertas] = useState<'58mm'|'80mm'>('58mm');
+  
+  const [posProducts, setPosProducts] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (active && activeStoreId && activeStoreId !== 'all') {
+      fetchProducts();
+    }
+  }, [active, activeStoreId]);
+
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('pos_products')
+      .select('*')
+      .eq('store_id', activeStoreId)
+      .eq('is_active', true);
+    if (!error && data) {
+      setPosProducts(data);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    if (!currentItem.nama) return [];
+    return posProducts.filter(p => p.name.toLowerCase().includes(currentItem.nama.toLowerCase()));
+  }, [posProducts, currentItem.nama]);
 
   const [isPreview, setIsPreview] = useState(false);
   
@@ -60,8 +84,8 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
   const renderThermalReceipt = () => (
     <div className="bg-white text-black mx-auto p-3 flex flex-col font-mono" style={{ width: ukuranKertas, minHeight: '150px' }}>
       <div className="text-center mb-3">
-        <h2 className="text-[14px] font-bold leading-tight">{shopName}</h2>
-        <p className="text-[10px] leading-tight">{address}</p>
+        <h2 className="text-[14px] font-bold leading-tight">{storeName || "NAMA TOKO"}</h2>
+        <p className="text-[10px] leading-tight whitespace-pre-wrap">{storeAddress || "Alamat Toko"}</p>
       </div>
       <div className="text-[10px] mb-2 border-b border-black border-dashed pb-2 space-y-0.5">
         <div className="flex justify-between"><span>Tgl:</span><span>{tanggal}</span></div>
@@ -130,28 +154,7 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
           
           <div className="w-[420px] shrink-0 h-full flex flex-col gap-6 overflow-y-auto pr-2 scrollbar-thin">
             
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
-              <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-700">Pengaturan Toko</h4>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nama Toko/Instansi</label>
-                  <input 
-                    value={shopName} 
-                    onChange={e => setShopName(e.target.value)} 
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Alamat Toko</label>
-                  <input 
-                    value={address} 
-                    onChange={e => setAddress(e.target.value)} 
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none" 
-                  />
-                </div>
-              </div>
-            </div>
+
 
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
               <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-700">Input Data Barang/Jasa</h4>
@@ -167,16 +170,39 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
                   />
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nama Barang / Jasa</label>
                   <input 
                     ref={namaRef}
                     value={currentItem.nama} 
-                    onChange={e => setCurrentItem({...currentItem, nama: e.target.value})} 
-                    placeholder="Contoh: Transfer BRI 500rb..." 
+                    onChange={e => {
+                      setCurrentItem({...currentItem, nama: e.target.value});
+                      setShowDropdown(true);
+                    }} 
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                    placeholder="Cari dari POS atau ketik manual..." 
                     onKeyDown={(e) => handleKeyDown(e, hargaRef)}
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none" 
                   />
+                  {showDropdown && filteredProducts.length > 0 && (
+                    <div className="absolute z-[100] w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {filteredProducts.map(p => (
+                        <div 
+                          key={p.id}
+                          className="px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0"
+                          onClick={() => {
+                            setCurrentItem({ ...currentItem, nama: p.name, harga: p.price.toString() });
+                            setShowDropdown(false);
+                            jumlahRef.current?.focus();
+                          }}
+                        >
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{p.name}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{formatRupiah(p.price)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -366,16 +392,39 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
               />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-[9px] font-black text-black mb-1 uppercase tracking-widest">NAMA BARANG / JASA</label>
               <input 
                 ref={namaRef}
                 value={currentItem.nama} 
-                onChange={e => setCurrentItem({...currentItem, nama: e.target.value})} 
-                placeholder="Contoh: Tarik Tunai 1jt" 
+                onChange={e => {
+                  setCurrentItem({...currentItem, nama: e.target.value});
+                  setShowDropdown(true);
+                }} 
+                onFocus={() => setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                placeholder="Cari dari POS atau ketik manual..." 
                 onKeyDown={(e) => handleKeyDown(e, hargaRef)}
                 className="form-input-modern w-full" 
               />
+              {showDropdown && filteredProducts.length > 0 && (
+                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                  {filteredProducts.map(p => (
+                    <div 
+                      key={p.id}
+                      className="px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"
+                      onClick={() => {
+                        setCurrentItem({ ...currentItem, nama: p.name, harga: p.price.toString() });
+                        setShowDropdown(false);
+                        jumlahRef.current?.focus();
+                      }}
+                    >
+                      <p className="text-xs font-black text-black leading-tight">{p.name}</p>
+                      <p className="text-[10px] text-gray-500 font-bold">{formatRupiah(p.price)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

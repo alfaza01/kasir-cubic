@@ -70,7 +70,7 @@ interface BerandaViewProps {
   stores?: Store[]
   isPc?: boolean
   allTransactions?: Transaction[]
-  onSyncStoreSettings?: (targetId: string, overrides: any) => Promise<boolean>
+  onSyncStoreSettings?: (targetId: string, overrides: any) => Promise<boolean | string>
 }
 
 const CyclingText: React.FC<{ texts: { text: string, isMain: boolean }[] }> = ({ texts }) => {
@@ -1109,7 +1109,10 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
       )}
       {showRincian && (() => {
         const wallets = getCategories();
-        const digitalWallets = wallets.filter(w => w.toUpperCase() !== 'LACI KASIR');
+        const digitalWallets = wallets.filter(w => {
+          const up = getWalletName(w).toUpperCase();
+          return up !== 'LACI KASIR' && !up.includes('DOMPET PENAMPUNG') && !up.includes('NON TUNAI');
+        });
 
         const getIconForWallet = (name: string) => {
           const n = name.toUpperCase();
@@ -1270,6 +1273,24 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
                          </div>
                       </div>
                     </div>
+
+                    {/* DOMPET PENAMPUNG SECTION (Dipindahkan dari Aset Digital) */}
+                    <div className="bg-white p-3 rounded-[1.2rem] shadow-sm border border-purple-50">
+                      <div className="flex justify-between items-center px-1">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+                            <i className="fa-solid fa-qrcode text-[10px]"></i>
+                          </div>
+                          <div className="flex flex-col">
+                            <h4 className="text-[10px] font-black text-purple-700 uppercase tracking-widest leading-none mt-0.5">DOMPET PENAMPUNG</h4>
+                            <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest leading-none">Saldo Qris / Rekening Owner</span>
+                          </div>
+                        </div>
+                        <span className="text-[12px] font-black text-purple-700 tabular-nums tracking-tight">
+                          {formatRupiah(props.walletBalances[wallets.find(w => { const up = getWalletName(w).toUpperCase(); return up.includes('DOMPET PENAMPUNG') || up.includes('NON TUNAI'); }) || 'Bank09'] || 0)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1295,7 +1316,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
           { id: 'view-kasbon', label: 'KASBON', icon: 'fa-file-invoice', color: 'bg-blue-500' },
           { id: 'view-kontak', label: 'KONTAK', icon: 'fa-address-book', color: 'bg-emerald-500' },
           { id: 'view-stok-voucher', label: 'VOUCHER', icon: 'fa-ticket', color: 'bg-orange-500' },
-          { id: 'view-kalender', label: 'KALENDER', icon: 'fa-calendar-days', color: 'bg-red-500' },
+          { id: 'view-pos-kasir', label: 'POS KASIR', icon: 'fa-cash-register', color: 'bg-indigo-500' },
           { 
             id: showLainnya ? 'tutup-lainnya' : 'buka-lainnya', 
             label: showLainnya ? 'TUTUP' : 'LAINNYA', 
@@ -1326,8 +1347,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
           <div className="grid grid-cols-4 gap-4">
             {[
               { id: 'view-nota', label: 'NOTA', icon: 'fa-receipt', color: 'text-purple-600', bg: 'bg-purple-50' },
-              { id: 'view-laporan', label: 'CLOSING', icon: 'fa-door-closed', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-              { id: 'view-transaksi', label: 'NON TUNAI', icon: 'fa-credit-card', color: 'text-teal-600', bg: 'bg-teal-50' },
+              { id: 'view-kalender', label: 'KALENDER', icon: 'fa-calendar-days', color: 'text-red-600', bg: 'bg-red-50' },
               { id: 'tutup-lainnya', label: 'TUTUP', icon: 'fa-chevron-up', color: 'text-gray-600', bg: 'bg-gray-100' },
             ].map((item) => (
               <div 

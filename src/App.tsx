@@ -23,6 +23,7 @@ import type { Store } from './types'
 import BerandaView from './views/BerandaView'
 import RiwayatView from './views/RiwayatView'
 import LaporanView from './views/LaporanView'
+import PosKasirView from './views/PosKasirView'
 import AkunView from './views/AkunView'
 import AsetSaldoView from './views/AsetSaldoView'
 import KasbonView from './views/KasbonView'
@@ -346,7 +347,7 @@ const App: React.FC = () => {
   }
 
   // ── LOCK KASIR IF EXPIRED ──
-  if (appLicenseStatus?.state === 'EXPIRED' && selectedRole === 'kasir' && activeView !== 'view-admin') {
+  if (appLicenseStatus?.state === 'EXPIRED' && selectedRole === 'kasir' && window.location.hash !== '#/admin') {
     return (
       <div className="relative w-screen h-screen">
         <button 
@@ -357,7 +358,7 @@ const App: React.FC = () => {
         </button>
         <LicenseScreen 
           onValid={() => setAppLicenseStatus(checkAppLicenseStatus())} 
-          onSecretTap={() => setActiveView('view-admin')}
+          onSecretTap={() => window.location.hash = '#/admin'}
         />
       </div>
     );
@@ -402,6 +403,7 @@ const App: React.FC = () => {
         setCurrentAccount(acc)
       }}
       appLicenseStatus={appLicenseStatus}
+      setAppLicenseStatus={setAppLicenseStatus}
     />
   )
 }
@@ -424,6 +426,7 @@ interface MainAppProps {
   activeStore: Store | null
   onUpdateActiveCashier: (username: string, account: KasirAccount) => void
   appLicenseStatus: LicenseStatus | null
+  setAppLicenseStatus: (status: LicenseStatus | null) => void
 }
 
 const MainApp: React.FC<MainAppProps> = ({ 
@@ -440,25 +443,27 @@ const MainApp: React.FC<MainAppProps> = ({
   activeRole,
   activeStore,
   onUpdateActiveCashier,
-  appLicenseStatus
+  appLicenseStatus,
+  setAppLicenseStatus
 }) => {
-
-  // PWA Update State
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW()
 
-  // Handover State (managed here so checkIncomingHandover can use username)
-  const [incomingHandover, setIncomingHandover] = useState<any | null>(null)
-
-  // Navigation State
+  // ── NAVIGATION & GLOBAL STATES ──
   const [activeView, setActiveView] = useState('view-beranda')
-  // ── Multi-Store States & Derived Store Info ──
+  const [continueSaldo, setContinueSaldo] = useState<boolean>(false)
   const [pantauStoreId, setPantauStoreId] = useState<string>('')
   const [stores, setStores] = useState<Store[]>([])
+  const [storeName, setStoreName] = useState('NAMA TOKO')
+  const [storeSubtext, setStoreSubtext] = useState('Pusat Layanan')
+  const [storeAddress, setStoreAddress] = useState('')
+  const [storePhoto, setStorePhoto] = useState<string>('')
+  const [incomingHandover, setIncomingHandover] = useState<any | null>(null)
+  const [screenSize, setScreenSize] = useState<string>(localStorage.getItem('screen') || 'tablet')
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
   const targetStoreId = (activeRole === 'owner' || activeStoreId === 'all') ? pantauStoreId : activeStoreId
-
   // Sync activeView with URL Hash
   useEffect(() => {
     const viewToHash: Record<string, string> = {
@@ -466,6 +471,7 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-transaksi': 'riwayat',
       'view-isi-saldo': 'isi-saldo',
       'view-laporan': 'laporan',
+      'view-pos-kasir': 'pos-kasir',
       'view-akun': 'akun',
       'view-kasbon': 'kasbon',
       'view-kontak': 'kontak',
@@ -512,6 +518,7 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-transaksi': 'riwayat',
       'view-isi-saldo': 'isi-saldo',
       'view-laporan': 'laporan',
+      'view-pos-kasir': 'pos-kasir',
       'view-akun': 'akun',
       'view-kasbon': 'kasbon',
       'view-kontak': 'kontak',
@@ -538,8 +545,7 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [activeView])
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
-  const [screenSize, setScreenSize] = useState(localStorage.getItem('screen') || 'tablet')
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
+
 
   // Apply theme class to <html> element and persist to localStorage
   useEffect(() => {
@@ -610,11 +616,6 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [googleUid, activeStoreId])
 
-  const [storeName, setStoreName] = useState('Kasir Cuba')
-  const [storeSubtext, setStoreSubtext] = useState('Pembukuan Agen brilink & Konter')
-  const [storePhoto, setStorePhoto] = useState('')
-  const [continueSaldo, setContinueSaldo] = useState<boolean>(false)
-
   const syncStoreSettingsToCloud = async (
     targetId: string, 
     overrides?: {
@@ -624,12 +625,12 @@ const MainApp: React.FC<MainAppProps> = ({
       mainAnnouncement?: string,
       skipGoogleUidCheck?: boolean
     }
-  ) => {
-    if ((!googleUid && !overrides?.skipGoogleUidCheck) || !targetId || targetId === 'all') return false;
+  ): Promise<true | string> => {
+    if ((!googleUid && !overrides?.skipGoogleUidCheck) || !targetId || targetId === 'all') return "UID/Store ID invalid";
     try {
       const localCats = localStorage.getItem('alphaPro_categories');
       const localConfigs = localStorage.getItem('alphaPro_categories_config');
-      const localWallets = localStorage.getItem('alphaPro_wallets_v2');
+      const localWallets = localStorage.getItem('cubic_custom_wallets');
       const continueSaldoVal = localStorage.getItem(`alphaPro_${targetId}_continueSaldo`);
       
       const categoriesPreset = {
@@ -655,14 +656,13 @@ const MainApp: React.FC<MainAppProps> = ({
         presets: presetsToUpload,
         running_texts: overrides?.runningTexts !== undefined ? overrides.runningTexts : runningTexts,
         main_announcement: overrides?.mainAnnouncement !== undefined ? overrides.mainAnnouncement : mainAnnouncement,
-        is_pin_enabled: isPin,
-        updated_at: new Date().toISOString()
+        is_pin_enabled: isPin
       });
       if (error) throw error;
       return true;
     } catch (err: any) {
       console.error('Gagal sync store settings ke cloud:', err.message);
-      return false;
+      return err.message || "Unknown error";
     }
   };
 
@@ -675,11 +675,11 @@ const MainApp: React.FC<MainAppProps> = ({
     localStorage.setItem(`alphaPro_${targetStoreId}_runningTexts`, JSON.stringify(runningTexts))
     localStorage.setItem(`alphaPro_${targetStoreId}_mainAnnouncement`, mainAnnouncement)
 
-    const success = await syncStoreSettingsToCloud(targetStoreId);
-    if (success) {
+    const result = await syncStoreSettingsToCloud(targetStoreId);
+    if (result === true) {
       showToast("PENGATURAN DISINKRONKAN KE CLOUD!")
     } else {
-      showToast("Gagal sync upload ke cloud")
+      showToast("Gagal sync upload ke cloud: " + result)
     }
   }
 
@@ -757,9 +757,9 @@ const MainApp: React.FC<MainAppProps> = ({
               }
             }
             if (parsed.walletsV2) {
-              const currWallets = localStorage.getItem('alphaPro_wallets_v2');
+              const currWallets = localStorage.getItem('cubic_custom_wallets');
               if (currWallets !== parsed.walletsV2) {
-                localStorage.setItem('alphaPro_wallets_v2', parsed.walletsV2);
+                localStorage.setItem('cubic_custom_wallets', parsed.walletsV2);
                 changed = true;
               }
             }
@@ -938,18 +938,21 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     if (activeRole === 'kasir' && activeStore) {
       setStoreName(activeStore.name)
-      setStoreSubtext(activeStore.subtext || '')
+      setStoreSubtext(activeStore.subtext || 'Pusat Layanan')
+      setStoreAddress(localStorage.getItem(`cubic_address_${activeStore.id}`) || '')
       setStorePhoto(activeStore.photo_url || '')
     } else if (activeRole === 'owner') {
       if (!pantauStoreId || pantauStoreId === 'all') {
         setStoreName('PILIH TOKO DULU')
         setStoreSubtext('Silakan pilih toko untuk mulai memantau')
+        setStoreAddress('')
         setStorePhoto('')
       } else {
         const s = stores.find(st => st.id === pantauStoreId)
         if (s) {
           setStoreName(s.name)
-          setStoreSubtext(s.subtext || '')
+          setStoreSubtext(s.subtext || 'Pusat Layanan')
+          setStoreAddress(localStorage.getItem(`cubic_address_${pantauStoreId}`) || '')
           setStorePhoto(s.photo_url || '')
         }
       }
@@ -976,12 +979,17 @@ const MainApp: React.FC<MainAppProps> = ({
     const { error } = await supabase.from('stores').update({ subtext }).eq('id', targetId)
     if (!error) {
       setStores(prev => prev.map(s => s.id === targetId ? { ...s, subtext } : s))
-      if (activeStore && targetId === activeStore.id) {
-        const updated = { ...activeStore, subtext }
-        localStorage.setItem('alphaPro_active_store', JSON.stringify(updated))
+      if (activeStoreId === targetId || pantauStoreId === targetId) {
+        setStoreSubtext(subtext)
       }
-      setStoreSubtext(subtext)
     }
+  }
+
+  const handleSaveStoreAddress = async (address: string) => {
+    const targetId = activeRole === 'owner' ? pantauStoreId : activeStoreId
+    if (!targetId || targetId === 'all') return
+    localStorage.setItem(`cubic_address_${targetId}`, address)
+    setStoreAddress(address)
   }
 
   const saveStorePhoto = async (photo_url: string) => {
@@ -1716,6 +1724,45 @@ const MainApp: React.FC<MainAppProps> = ({
     })
   }
 
+  const handleSaveAksesorisTx = async (
+    items: { name: string; qty: number; total: number }[],
+    grandTotal: number,
+    paymentMethod: string
+  ) => {
+    if (!targetStoreId || targetStoreId === 'all') return;
+    const id = Date.now().toString();
+    const keterangan = `[POS] ${items.map(i => `${i.name}(${i.qty})`).join(', ')} | ${paymentMethod}`;
+    const newTx = {
+      id,
+      user_id: googleUid,
+      kasir_id: username,
+      kategori: 'Aksesoris',
+      sumber_dana: '',
+      tujuan_dana: 'Bank08',
+      nominal: grandTotal,
+      admin_fee: 0,
+      keterangan,
+      timestamp: getLocalISOString(),
+      store_id: targetStoreId
+    };
+    const { error } = await supabase.from('transactions').insert(newTx);
+    if (!error) {
+      const optimisticTx: Transaction = {
+        id: newTx.id,
+        kategori: newTx.kategori,
+        sumber_dana: newTx.sumber_dana,
+        tujuan_dana: newTx.tujuan_dana,
+        nominal: newTx.nominal,
+        adminFee: 0,
+        keterangan: newTx.keterangan,
+        timestamp: newTx.timestamp,
+        kasir_id: newTx.kasir_id,
+        store_id: newTx.store_id
+      };
+      setTransactions(prev => [optimisticTx, ...prev]);
+    }
+  };
+
   const handleOwnerPenyesuaianModal = (kasirId: string, currentBalance: number, newBalance: number, kategori: string, tujuanDana: string = '') => {
     if (isSaving) return
     setIsSaving(true)
@@ -2068,6 +2115,7 @@ const MainApp: React.FC<MainAppProps> = ({
                     'view-beranda': 'Beranda',
                     'view-transaksi': 'Riwayat',
                     'view-laporan': 'Laporan',
+                    'view-pos-kasir': 'POS Kasir',
                     'view-akun': 'Akun',
                     'view-isi-saldo': 'Aset Digital',
                     'view-kasbon': 'Kasbon',
@@ -2233,43 +2281,19 @@ const MainApp: React.FC<MainAppProps> = ({
                       setIsSidePanelOpen={setIsSidePanelOpen}
                     />
                   );
-                case 'view-laporan':
+                case 'view-pos-kasir':
                   return (
-                    <LaporanView
+                    <PosKasirView
                       active={true}
                       isPc={screenSize === 'pc'}
                       setActiveView={setActiveView}
-                      saldoBank={dailyReport ? dailyReport.saldoBank : saldoBank}
-                      totalPenjualan={dailyReport ? (dailyReport.penjualanDigital + dailyReport.totalAksesoris) : totalPenjualan}
-                      transactions={displayTransactions.filter(t => t.timestamp.startsWith(filterTanggalLaporan))}
-                      totalTarik={dailyReport ? dailyReport.totalTarik : totalTarik}
-                      totalAdmin={dailyReport ? dailyReport.totalAdmin : totalAdmin}
-                      totalAksesoris={dailyReport ? dailyReport.totalAksesoris : totalAksesoris}
-                      totalVolume={totalVolume}
-                      totalSaldoKas={dailyReport ? dailyReport.totalSaldoKas : totalSaldoKas}
-                      penjualanDigital={dailyReport ? dailyReport.penjualanDigital : penjualanDigital}
-                      kasModal={dailyReport ? dailyReport.kasModal : todayKasModal}
-                      kasLainnya={dailyReport ? dailyReport.kasLainnya : kasLainnya}
-                      kasirRole={account.role}
-                      filterKasir={filterKasir}
-                      setFilterKasir={setFilterKasir}
-                      filterTanggal={filterTanggalLaporan}
-                      setFilterTanggal={setFilterTanggalLaporan}
-                      saldoReal={dailyReport ? dailyReport.saldoReal : (() => {
-                        const dateTxs = displayTransactions.filter(t => t.timestamp.startsWith(filterTanggalLaporan));
-                        return filterTanggalLaporan === todayISO ? totalSaldoReal : calculateDailyStats(dateTxs).saldoReal;
-                      })()}
-                      onUpdateSaldoReal={handleSimpanSaldoRealAplikasi}
-                      isSaving={isSaving}
-                      onEdit={handleStartEdit}
-                      onDelete={handleDeleteTx}
-                      kasirList={kasirList}
-                      storeName={storeName}
-                      storeSubtext={storeSubtext}
-                      storePhoto={storePhoto}
-                      kasirName={account.name}
-                      setIsSidePanelOpen={setIsSidePanelOpen}
+                      showToast={showToast}
+                      onConfirm={handleConfirm}
                       activeStoreId={targetStoreId}
+                      kasirName={account.name}
+                      onSaveAksesorisTx={handleSaveAksesorisTx}
+                      storeName={storeName}
+                      storeAddress={storeAddress}
                     />
                   );
                 case 'view-akun':
@@ -2292,9 +2316,11 @@ const MainApp: React.FC<MainAppProps> = ({
                       onSaveMainAnnouncement={saveMainAnnouncement}
                       storeName={storeName}
                       storeSubtext={storeSubtext}
+                      storeAddress={storeAddress}
                       storePhoto={storePhoto}
                       onSaveStoreName={saveStoreName}
                       onSaveStoreSubtext={saveStoreSubtext}
+                      onSaveStoreAddress={handleSaveStoreAddress}
                       onSaveStorePhoto={saveStorePhoto}
                       setIsSidePanelOpen={setIsSidePanelOpen}
                       onConfirm={handleConfirm}
@@ -2338,7 +2364,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 case 'view-kalender':
                   return <KalenderView active={true} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} />;
                 case 'view-nota':
-                  return <NotaView active={true} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} />;
+                  return <NotaView active={true} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} activeStoreId={targetStoreId} />;
                 case 'view-otomatis':
                   return (
                     <OtomatisView
@@ -2545,6 +2571,19 @@ const MainApp: React.FC<MainAppProps> = ({
             setIsSidePanelOpen={setIsSidePanelOpen}
           />
 
+          <PosKasirView
+            active={activeView === 'view-pos-kasir'}
+            isPc={screenSize === 'pc'}
+            setActiveView={setActiveView}
+            showToast={showToast}
+            onConfirm={handleConfirm}
+            activeStoreId={targetStoreId}
+            kasirName={account.name}
+            onSaveAksesorisTx={handleSaveAksesorisTx}
+            storeName={storeName}
+            storeAddress={storeAddress}
+          />
+
           <LaporanView 
             active={activeView === 'view-laporan'}
             setActiveView={setActiveView}
@@ -2589,6 +2628,14 @@ const MainApp: React.FC<MainAppProps> = ({
             kasirRole={account.role}
             googleEmail={googleEmail}
             googleUid={googleUid}
+            storeName={storeName}
+            storeSubtext={storeSubtext}
+            storeAddress={storeAddress}
+            storePhoto={storePhoto}
+            onSaveStoreName={saveStoreName}
+            onSaveStoreSubtext={saveStoreSubtext}
+            onSaveStoreAddress={handleSaveStoreAddress}
+            onSaveStorePhoto={saveStorePhoto}
             onLogout={onLogout}
             onUploadToCloud={handleUploadToCloud}
             onDownloadFromCloud={handleDownloadFromCloud}
@@ -2597,12 +2644,6 @@ const MainApp: React.FC<MainAppProps> = ({
             mainAnnouncement={mainAnnouncement}
             onSaveRunningTexts={saveRunningTexts}
             onSaveMainAnnouncement={saveMainAnnouncement}
-            storeName={storeName}
-            storeSubtext={storeSubtext}
-            storePhoto={storePhoto}
-            onSaveStoreName={saveStoreName}
-            onSaveStoreSubtext={saveStoreSubtext}
-            onSaveStorePhoto={saveStorePhoto}
             setIsSidePanelOpen={setIsSidePanelOpen}
             onConfirm={handleConfirm}
             currentUsername={username}
@@ -2642,7 +2683,7 @@ const MainApp: React.FC<MainAppProps> = ({
           <KontakView active={activeView === 'view-kontak'} isPc={screenSize === 'pc'} setActiveView={setActiveView} kasirName={account.name} showToast={showToast} onConfirm={handleConfirm} activeStoreId={targetStoreId} />
           <VoucherView active={activeView === 'view-stok-voucher'} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} activeStoreId={targetStoreId} kasirRole={account.role} kasirName={account.name} googleUid={googleUid} currentUsername={username} kasirList={kasirList} incomingHandover={incomingHandover} onAcceptHandover={handleAcceptHandover} onRejectHandover={handleRejectHandover} />
           <KalenderView active={activeView === 'view-kalender'} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} />
-          <NotaView active={activeView === 'view-nota'} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} />
+          <NotaView active={activeView === 'view-nota'} isPc={screenSize === 'pc'} setActiveView={setActiveView} showToast={showToast} onConfirm={handleConfirm} activeStoreId={targetStoreId} />
           <OtomatisView 
             active={activeView === 'view-otomatis'} 
             isPc={screenSize === 'pc'}

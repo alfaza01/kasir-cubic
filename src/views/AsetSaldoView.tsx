@@ -653,16 +653,23 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
                           <p className="text-[9px] text-orange-100 font-bold mt-0.5 whitespace-nowrap">Modal Pagi + Oper Shift + Suntik Saldo</p>
                         </div>
                         <span className="font-black text-[13px] text-orange-800 bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-md">{(() => {
-                          const totalMasuk = props.transactions
-                            .filter(t => {
-                              const kat = t.kategori || '';
-                              const ket = (t.keterangan || '').toUpperCase();
-                              if (kat.startsWith('Isi') && !kat.includes('Real Aplikasi')) return true;
-                              if (kat.startsWith('Tambah')) return true;
-                              if (kat === 'Operan Shift' && ket.includes('TERIMA')) return true;
-                              return false;
-                            })
-                            .reduce((s, t) => s + t.nominal, 0);
+                          const totalMasuk = props.transactions.reduce((acc, t) => {
+                            const kat = t.kategori || '';
+                            const katLower = kat.toLowerCase();
+                            const ket = (t.keterangan || '').toUpperCase();
+                            
+                            let val = 0;
+                            if (kat === 'Isi Saldo Bank' || katLower === 'inject saldo' || (katLower.includes('modal awal') && t.tujuan_dana !== 'Bank08' && t.tujuan_dana !== 'Bank09')) {
+                              val = t.nominal;
+                            } else if (kat === 'Penarikan Saldo Bank' || (katLower.includes('modal awal') && t.sumber_dana && t.sumber_dana !== 'Bank08' && t.sumber_dana !== 'Bank09')) {
+                              val = -t.nominal;
+                            } else if (kat === 'Operan Shift' && ket.includes('TERIMA') && t.tujuan_dana !== 'Bank08' && t.tujuan_dana !== 'Bank09') {
+                              val = t.nominal;
+                            } else if (kat.startsWith('Tambah') && t.tujuan_dana !== 'Bank08' && t.tujuan_dana !== 'Bank09') {
+                              val = t.nominal;
+                            }
+                            return acc + val;
+                          }, 0);
                           return formatRupiah(totalMasuk);
                         })()}</span>
                       </div>
