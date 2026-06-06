@@ -127,7 +127,6 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
   const [kasirCanTambahSaldo, setKasirCanTambahSaldo] = useState(() => localStorage.getItem('alphaPro_kasir_tambah_saldo_access') === 'true')
   const [showSettingModal, setShowSettingModal] = useState(false)
   const [showSuntikModal, setShowSuntikModal] = useState(false)
-  const [showOperShiftModal, setShowOperShiftModal] = useState(false)
   const [showPindahSaldoModal, setShowPindahSaldoModal] = useState(false)
   const [showRiwayatMutasi, setShowRiwayatMutasi] = useState(false)
 
@@ -306,22 +305,6 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
     }
   };
 
-  const handleSaveOperShift = async () => {
-    if (props.kasirRole === 'owner' && !targetKasir) {
-      props.showToast('Pilih Target Kasir terlebih dahulu!');
-      return;
-    }
-    const nom = parseNominalStr(modNominal);
-    if (!modSumber || !modTujuan || nom <= 0) {
-      props.showToast('Lengkapi Sumber, Tujuan dan Nominal yang valid!')
-      return;
-    }
-    setIsProcessing(true);
-    await props.handleCreateCustomTransaction('Operan Shift', modSumber, modTujuan, nom, 0, 'OPER SHIFT SALDO', targetKasir || undefined);
-    setIsProcessing(false);
-    setShowOperShiftModal(false);
-    setModNominal('');
-  }
 
   const handleSavePindahSaldo = async () => {
     if (props.kasirRole === 'owner' && !targetKasir) {
@@ -493,13 +476,6 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
               </button>
             )}
 
-            <button 
-              onClick={() => { setShowOperShiftModal(true); setModSumber('Laci Kasir'); setModTujuan(''); setModNominal(''); }}
-              className="bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl py-2.5 px-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 transition-all"
-            >
-              <i className="fa-solid fa-money-bill-transfer text-[10px] sm:text-sm"></i>
-              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-center leading-tight">Oper Shift</span>
-            </button>
             <button 
               onClick={() => { setModalType('Pindah Saldo'); setShowPindahSaldoModal(true); setModSumber(''); setModTujuan(''); setModNominal(''); }}
               className="bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl py-2.5 px-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 transition-all"
@@ -1020,85 +996,6 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
         </div>
       )}
 
-      {showOperShiftModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 relative">
-            <button onClick={() => setShowOperShiftModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-slate-400 bg-slate-100 rounded-full hover:bg-slate-200">
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-            <div className="mb-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-3">
-                <i className="fa-solid fa-people-arrows text-xl"></i>
-              </div>
-              <h3 className="font-black text-slate-800 text-lg uppercase tracking-tight">Oper Shift</h3>
-              <p className="text-[11px] text-slate-500 font-bold tracking-widest">OPER SHIFT SALDO</p>
-            </div>
-            
-            <div className="space-y-4">
-              {renderTargetKasirSelector()}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[9px] font-black text-red-500 uppercase tracking-widest mb-1.5 px-1 flex items-center gap-1.5">
-                    <i className="fa-solid fa-arrow-up-right-from-square"></i> Sumber Dana
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={modSumber}
-                      onChange={(e) => setModSumber(e.target.value)}
-                      className="w-full bg-red-50 border border-red-100 text-red-900 rounded-xl px-3 py-3 text-[10px] font-bold outline-none appearance-none"
-                    >
-                      <option value="">- Pilih -</option>
-                      {walletsFull.filter(w => !w.isHidden).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                    </select>
-                    <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-red-400 pointer-events-none"></i>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 px-1 flex items-center gap-1.5">
-                    <i className="fa-solid fa-arrow-down-to-square"></i> Tujuan Akhir
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={modTujuan}
-                      onChange={(e) => setModTujuan(e.target.value)}
-                      className="w-full bg-emerald-50 border border-emerald-100 text-emerald-900 rounded-xl px-3 py-3 text-[10px] font-bold outline-none appearance-none"
-                    >
-                      <option value="">- Pilih -</option>
-                      {walletsFull.filter(w => !w.isHidden).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                    </select>
-                    <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 pointer-events-none"></i>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Nominal Oper</label>
-                <input 
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Rp 0"
-                  value={modNominal}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, '');
-                    setModNominal(raw ? formatRupiah(parseInt(raw, 10)) : '');
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 text-sm font-black outline-none focus:ring-2 focus:ring-blue-200"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button 
-                  onClick={handleSaveOperShift}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl shadow-lg active:scale-95 transition-all text-center flex justify-center items-center gap-2"
-                >
-                  {isProcessing ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check-double"></i>} Proses Oper Shift
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSuntikModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
