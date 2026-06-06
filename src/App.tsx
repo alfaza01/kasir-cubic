@@ -1262,14 +1262,15 @@ const MainApp: React.FC<MainAppProps> = ({
 
       if (tujuan && walletBalances[tujuan] !== undefined) {
         walletBalances[tujuan] += tx.nominal;
-        if (!isNonTunaiTx) {
-          walletBalances[tujuan] += adminFee;
-        }
       }
       
       if (isNonTunaiTx) {
         if (walletBalances['Bank09'] !== undefined) {
           walletBalances['Bank09'] += adminFee;
+        }
+      } else {
+        if (walletBalances['Bank08'] !== undefined) {
+          walletBalances['Bank08'] += adminFee;
         }
       }
     });
