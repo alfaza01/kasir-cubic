@@ -262,8 +262,18 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
       walletBalances[sumber] = (walletBalances[sumber] || 0) - t.nominal;
     }
     
+    const isAksesorisTx = t.kategori === 'Aksesoris';
+    const isNonTunaiTx = ket.includes('[NON_TUNAI]') || (isAksesorisTx && (t.tujuan_dana || '').toUpperCase().includes('PENAMPUNG'));
+    const adminFee = t.admin_fee || t.adminFee || 0;
+
     if (tujuan) {
-      walletBalances[tujuan] = (walletBalances[tujuan] || 0) + (t.nominal + (t.admin_fee || t.adminFee || 0));
+      walletBalances[tujuan] = (walletBalances[tujuan] || 0) + t.nominal;
+    }
+
+    if (isNonTunaiTx) {
+      walletBalances['Bank09'] = (walletBalances['Bank09'] || 0) + adminFee;
+    } else {
+      walletBalances['Bank08'] = (walletBalances['Bank08'] || 0) + adminFee;
     }
     
     const isLayananPelanggan = ['transfer', 'tarik tunai', 'aksesoris', 'topup', 'pembayaran'].some(cat => katLower.includes(cat));
