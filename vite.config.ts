@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['logo_icon.png', 'icons.svg'],
       manifest: {
         name: 'AplikasiCubic',

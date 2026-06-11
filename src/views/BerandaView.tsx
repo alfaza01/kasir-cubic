@@ -1386,23 +1386,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
           </div>
 
           <div className="mb-4">
-            <h3 
-              onClick={() => {
-                const count = (window as any).secretTapCount || 0;
-                if (count + 1 >= 7) {
-                  (window as any).secretTapCount = 0;
-                  props.setActiveView('view-admin');
-                } else {
-                  (window as any).secretTapCount = count + 1;
-                  // reset tap count if idle for a bit
-                  clearTimeout((window as any).secretTapTimer);
-                  (window as any).secretTapTimer = setTimeout(() => {
-                    (window as any).secretTapCount = 0;
-                  }, 2000);
-                }
-              }}
-              className="font-black text-slate-800 text-lg tracking-tight uppercase px-1 cursor-pointer select-none"
-            >
+            <h3 className="font-black text-slate-800 text-lg tracking-tight uppercase px-1 select-none">
               PANEL OWNER
             </h3>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 mb-3 px-1">Kelola semua data toko</p>

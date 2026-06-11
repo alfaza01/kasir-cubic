@@ -4,6 +4,7 @@ import { getOwnerWa, setOwnerWa } from '../lib/supabase';
 import { cn } from '../lib/utils'
 import { Shield, Database, RefreshCw, Trash2, ArrowLeft, Terminal, CheckCircle, Key, Copy } from 'lucide-react'
 import { generateLicenseCode, LICENSE_PACKAGES } from '../lib/license'
+import AdminPackageEditor from '../components/AdminPackageEditor'
 
 interface AdminViewProps {
   active: boolean
@@ -28,7 +29,7 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
   const [waNumber, setWaNumber] = useState('6287824889706')
   const [genCustomerName, setGenCustomerName] = useState('')
   const [clientRegistry, setClientRegistry] = useState<any[]>([])
-  const [adminTab, setAdminTab] = useState<'lisensi' | 'properti'>('lisensi')
+  const [adminTab, setAdminTab] = useState<'lisensi' | 'properti' | 'paket'>('lisensi')
   const [userFeedbacks, setUserFeedbacks] = useState<any[]>([])
 
   // Fetch owner WA from Supabase on mount
@@ -178,10 +179,26 @@ const AdminView: React.FC<AdminViewProps> = ({ active, isPc, setActiveView, show
         >
           Properti Admin
         </button>
+        <button 
+          onClick={() => setAdminTab('paket')}
+          className={cn("flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", adminTab === 'paket' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-slate-900 border border-slate-800 text-slate-500 hover:bg-slate-800')}
+        >
+          Paket Langganan
+        </button>
       </div>
 
       {/* Main Content Areas */}
       <div className="flex-1 overflow-y-auto space-y-6 hide-scrollbar pb-32">
+        {adminTab === 'paket' && (
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Database size={14} className="text-blue-500" />
+              <h4 className="text-[11px] font-black text-white uppercase tracking-wider">Manajemen Daftar Harga</h4>
+            </div>
+            <AdminPackageEditor showToast={showToast} />
+          </div>
+        )}
+
         {adminTab === 'properti' && (
           <>
             {/* User Suggestions */}

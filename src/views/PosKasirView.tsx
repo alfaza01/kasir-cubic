@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { printReceiptToRawBT } from '../lib/utils';
 
 interface PosProduct {
   id: string;
@@ -413,7 +414,7 @@ export default function PosKasirView({ active, isPc, setActiveView, showToast, o
           <button onClick={() => setShowPrintPreview(false)} className="px-5 py-2.5 bg-white/10 text-white rounded-full font-bold flex items-center gap-2 active:scale-95">
             <i className="fa-solid fa-arrow-left"></i> KEMBALI
           </button>
-          <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-black shadow-xl flex items-center gap-2 active:scale-95">
+          <button onClick={() => printReceiptToRawBT(storeName || '', storeAddress || '', kasirName, lastTx.id, lastTx.items, lastTx.grandTotal, lastTx.paid, lastTx.change, new Date().toLocaleString('id-ID', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short' }))} className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-black shadow-xl flex items-center gap-2 active:scale-95">
             <i className="fa-solid fa-print"></i> CETAK
           </button>
         </div>

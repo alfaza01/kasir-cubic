@@ -393,3 +393,40 @@ export const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quali
     reader.onerror = (err) => reject(err);
   });
 };
+
+export const printReceiptToRawBT = (
+  storeName: string,
+  storeAddress: string,
+  kasirName: string,
+  transactionId: string,
+  items: { name: string; qty: number; price: number }[],
+  grandTotal: number,
+  paid: number,
+  change: number,
+  tanggal: string
+) => {
+  let text = "";
+  
+  text += "[C]<b>" + (storeName || "NAMA TOKO") + "</b>\n";
+  if (storeAddress) text += "[C]" + storeAddress + "\n";
+  text += "[C]--------------------------------\n";
+  text += "[L]Tgl: " + tanggal + "\n";
+  if (kasirName) text += "[L]Ksr: " + kasirName + "\n";
+  if (transactionId) text += "[L]Trx: " + transactionId + "\n";
+  text += "[C]--------------------------------\n";
+  
+  items.forEach(it => {
+    text += "[L]" + it.name + "\n";
+    text += "[L]" + it.qty + "x " + formatRupiah(it.price).replace('Rp', '') + " [R]" + formatRupiah(it.qty * it.price).replace('Rp', '') + "\n";
+  });
+  
+  text += "[C]--------------------------------\n";
+  text += "[L]<b>TOTAL</b> [R]<b>" + formatRupiah(grandTotal) + "</b>\n";
+  if (paid > 0) text += "[L]TUNAI [R]" + formatRupiah(paid) + "\n";
+  if (change > 0) text += "[L]KEMBALI [R]" + formatRupiah(change) + "\n";
+  text += "[C]--------------------------------\n";
+  text += "[C]Terima Kasih\n\n\n";
+
+  const intentUrl = "intent:" + encodeURIComponent(text) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+  window.location.href = intentUrl;
+};

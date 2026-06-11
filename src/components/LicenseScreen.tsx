@@ -6,26 +6,26 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { validateLicenseCode } from '../lib/license';
+import { getSubscriptionPackages, SubscriptionPackage, DEFAULT_PACKAGES } from '../lib/supabase';
 
 interface LicenseScreenProps {
-  onSecretTap: () => void;
   onValid: () => void;
   onBack?: () => void;
 }
 
-export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseScreenProps) {
+export default function LicenseScreen({ onValid, onBack }: LicenseScreenProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [hasNotification, setHasNotification] = useState(true);
   const [showPushNotif, setShowPushNotif] = useState(false);
   
   const deviceId = localStorage.getItem('cubic_device_id') || 'ID-UNKNOWN';
   const [waNumber, setWaNumberState] = useState(localStorage.getItem('cubic_owner_wa') || '6287824889706');
+  const [packagesList, setPackagesList] = useState<SubscriptionPackage[]>(DEFAULT_PACKAGES);
 
   // License State
   const [licenseKey, setLicenseKey] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [secretTapCount, setSecretTapCount] = useState(0);
 
   const [devices, setDevices] = useState([
     { id: deviceId, name: 'Perangkat Saat Ini', current: true },
@@ -43,6 +43,10 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
         }
       })
       .catch(() => {}); // fallback ke localStorage/hardcode jika offline
+
+    getSubscriptionPackages().then(pkgs => {
+      setPackagesList(pkgs);
+    });
 
     // Simulasi push notification
     const timer = setTimeout(() => {
@@ -93,54 +97,6 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
 
   const activities = [
     { id: 1, title: 'Lisensi Diperiksa', description: `Sistem memeriksa status lisensi pada ${deviceId}.`, time: 'Baru saja', icon: Smartphone, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  ];
-
-  type Feature = { text: string; included?: boolean; info?: boolean; infinite?: boolean; iconUsers?: boolean; };
-  type Package = { name: string; price: string; desc?: string; badge?: string; features: Feature[]; };
-
-  const packages: Package[] = [
-    {
-      name: 'Pemula',
-      price: 'Rp 15.000',
-      desc: 'Aktif selama 1 Bulan',
-      features: [
-        { text: 'Lisensi untuk 1 Perangkat', included: true },
-        { text: 'Kelola 1 toko aktif', included: true },
-        { text: '1 kasir aktif', included: true },
-      ]
-    },
-    {
-      name: 'Paket 2',
-      price: 'Rp 50.000',
-      desc: 'Aktif selama 4 Bulan',
-      badge: 'HEMAT',
-      features: [
-        { text: 'Lisensi untuk 1 Perangkat', included: true },
-        { text: 'Kelola 1 toko aktif', included: true },
-        { text: '2 kasir aktif', included: true },
-      ]
-    },
-    {
-      name: 'Paket 3',
-      price: 'Rp 150.000',
-      badge: 'POPULER',
-      desc: 'Aktif selama 1 Tahun',
-      features: [
-        { text: 'Lisensi untuk 3 Perangkat', included: true },
-        { text: 'Kelola 2 toko aktif', included: true },
-        { text: 'Kasir bebas', info: true, infinite: true },
-      ]
-    },
-    {
-      name: 'Lifetime',
-      price: 'Rp 399.000',
-      desc: 'Paket Selamanya',
-      features: [
-        { text: 'Lisensi untuk 6 Perangkat', included: true },
-        { text: 'Kelola 5 toko aktif', included: true },
-        { text: 'Kasir bebas', info: true, infinite: true },
-      ]
-    }
   ];
 
   return (
@@ -243,21 +199,7 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
                       <Lock className="w-7 h-7 text-blue-600 fill-current" />
                     </div>
                     
-                    <h2 
-                      className="text-lg font-black text-slate-800 uppercase tracking-widest mb-2 cursor-pointer select-none"
-                      onClick={() => {
-                        const newCount = secretTapCount + 1;
-                        if (newCount >= 7) {
-                          const pw = prompt('Developer Access Password:');
-                          if (pw === 'Umbui123@') {
-                            onSecretTap();
-                          }
-                          setSecretTapCount(0);
-                        } else {
-                          setSecretTapCount(newCount);
-                        }
-                      }}
-                    >
+                    <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-2 select-none">
                       Aktivasi Aplikasi
                     </h2>
                     <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider leading-relaxed max-w-[260px] mb-6">
@@ -460,7 +402,7 @@ export default function LicenseScreen({ onSecretTap, onValid, onBack }: LicenseS
                     </button>
                   </div>
 
-                  {packages.map((pkg) => (
+                  {packagesList.map((pkg) => (
                     <div key={pkg.name} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 flex flex-col relative overflow-hidden group hover:border-blue-300 transition-colors">
                       {pkg.badge && (
                         <span className="absolute top-0 right-0 bg-emerald-100 text-emerald-600 text-[9px] font-black px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest border-b border-l border-emerald-200">

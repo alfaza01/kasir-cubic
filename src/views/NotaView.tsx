@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ArrowLeft, Printer, Plus, Trash2 } from "lucide-react";
-import { formatRupiah, formatInputRupiah, parseNominal, getLocalISOString, cn } from "../lib/utils";
+import { formatRupiah, formatInputRupiah, parseNominal, getLocalISOString, cn, printReceiptToRawBT } from "../lib/utils";
 import { supabase } from '../lib/supabase';
 
 interface NotaItem {
@@ -96,7 +96,22 @@ const NotaView: React.FC<{ active: boolean; setActiveView: (v: string) => void; 
   };
 
   const handlePrint = () => {
-    window.print();
+    const mappedItems = items.map(it => ({
+      name: it.nama,
+      qty: parseFloat(it.jumlah) || 1,
+      price: parseNominal(it.harga)
+    }));
+    printReceiptToRawBT(
+      storeName || '',
+      storeAddress || '',
+      '', 
+      `NOTA-${Date.now().toString().slice(-6)}`,
+      mappedItems,
+      calculateTotal(),
+      0, 
+      0, 
+      tanggal
+    );
   };
 
   const renderThermalReceipt = () => (

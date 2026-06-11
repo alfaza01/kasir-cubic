@@ -1,3 +1,8 @@
 akun supabase = alfazafova
 akun gmail = alfazapova
 github = alfaza01
+
+
+akun firebase = https://console.firebase.google.com/project/kasir-cubic/overview?hl=id
+email = elmudzie@gmail.com
+https://kasir-cubic.web.app/

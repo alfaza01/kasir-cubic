@@ -358,7 +358,6 @@ const App: React.FC = () => {
         </button>
         <LicenseScreen 
           onValid={() => setAppLicenseStatus(checkAppLicenseStatus())} 
-          onSecretTap={() => window.location.hash = '#/admin'}
         />
       </div>
     );
@@ -489,7 +488,6 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-admin': 'admin',
       'view-lisensi': 'lisensi'
     }
     const hashToView: Record<string, string> = Object.fromEntries(
@@ -536,7 +534,6 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-admin': 'admin',
       'view-lisensi': 'lisensi'
     }
     const hash = viewToHash[activeView] || activeView.replace('view-', '')
@@ -2077,9 +2074,28 @@ const MainApp: React.FC<MainAppProps> = ({
 
   return (
     <div className={cn("app-container", `theme-${theme}`, screenSize !== 'auto' && screenSize)}>
+      {needRefresh && (
+        <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white p-3 z-[99999] flex items-center justify-between shadow-lg">
+          <span className="text-xs font-bold">Pembaruan baru tersedia!</span>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => updateServiceWorker(true)} 
+              className="bg-white text-blue-600 px-3 py-1 rounded text-xs font-black uppercase"
+            >
+              Update
+            </button>
+            <button 
+              onClick={() => setNeedRefresh(false)} 
+              className="bg-blue-700 px-3 py-1 rounded text-xs font-bold"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
       {appLicenseStatus?.state === 'TRIAL' && (
         <div 
-          onClick={() => setActiveView('view-admin')}
+          onClick={() => setActiveView('view-lisensi')}
           className={cn(
             "bg-red-600 text-white text-[10px] font-black uppercase tracking-widest text-center py-2 z-[9999] shadow-md shrink-0 cursor-pointer w-full",
             screenSize === 'pc' ? "absolute top-0 left-0 right-0" : ""
@@ -2135,8 +2151,7 @@ const MainApp: React.FC<MainAppProps> = ({
                     'view-owner-backup': 'Backup & Restore',
                     'view-owner-saldo': 'Manajemen Saldo',
                     'view-owner-audit': 'Audit Laci',
-                    'view-owner-kategori': 'Kategori Transaksi',
-                    'view-admin': 'Panel Admin Developer'
+                    'view-owner-kategori': 'Kategori Transaksi'
                   };
                   return titles[activeView] || 'Dashboard';
                 })()}</h2>
@@ -2385,19 +2400,10 @@ const MainApp: React.FC<MainAppProps> = ({
                       activeStoreId={targetStoreId}
                     />
                   );
-                case 'view-admin':
-                  return (
-                    <AdminView
-                      active={true}
-                      isPc={screenSize === 'pc'}
-                      setActiveView={setActiveView}
-                    />
-                  );
                 case 'view-lisensi':
                   return (
                     <LicenseScreen
                       onValid={() => setAppLicenseStatus(checkAppLicenseStatus())}
-                      onSecretTap={() => setActiveView('view-admin')}
                       onBack={() => setActiveView('view-beranda')}
                     />
                   );
@@ -2702,16 +2708,9 @@ const MainApp: React.FC<MainAppProps> = ({
             activeStoreId={targetStoreId}
           />
 
-          <AdminView 
-              active={activeView === 'view-admin'} 
-              isPc={screenSize === 'pc'} 
-              setActiveView={setActiveView} 
-            />
-
           {activeView === 'view-lisensi' && (
             <LicenseScreen
               onValid={() => setAppLicenseStatus(checkAppLicenseStatus())}
-              onSecretTap={() => setActiveView('view-admin')}
               onBack={() => setActiveView('view-beranda')}
             />
           )}

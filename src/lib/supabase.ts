@@ -376,5 +376,93 @@ export const setOwnerWa = async (wa: string): Promise<void> => {
   localStorage.setItem('cubic_owner_wa', wa);
 };
 
+export interface SubscriptionPackage {
+  id: string; // "PEMULA", "PAKET_2", "PAKET_3", "LIFETIME"
+  name: string;
+  price: string;
+  desc: string;
+  badge?: string;
+  features: { text: string; included?: boolean; info?: boolean; infinite?: boolean; iconUsers?: boolean; }[];
+}
+
+export const DEFAULT_PACKAGES: SubscriptionPackage[] = [
+  {
+    id: 'PEMULA',
+    name: 'Pemula',
+    price: 'Rp 15.000',
+    desc: 'Aktif selama 1 Bulan',
+    features: [
+      { text: 'Lisensi untuk 1 Perangkat', included: true },
+      { text: 'Kelola 1 toko aktif', included: true },
+      { text: '1 kasir aktif', included: true },
+    ]
+  },
+  {
+    id: 'PAKET_2',
+    name: 'Paket 2',
+    price: 'Rp 50.000',
+    desc: 'Aktif selama 4 Bulan',
+    badge: 'HEMAT',
+    features: [
+      { text: 'Lisensi untuk 1 Perangkat', included: true },
+      { text: 'Kelola 1 toko aktif', included: true },
+      { text: '2 kasir aktif', included: true },
+    ]
+  },
+  {
+    id: 'PAKET_3',
+    name: 'Paket 3',
+    price: 'Rp 150.000',
+    badge: 'POPULER',
+    desc: 'Aktif selama 1 Tahun',
+    features: [
+      { text: 'Lisensi untuk 3 Perangkat', included: true },
+      { text: 'Kelola 2 toko aktif', included: true },
+      { text: 'Kasir bebas', info: true, infinite: true },
+    ]
+  },
+  {
+    id: 'LIFETIME',
+    name: 'Lifetime',
+    price: 'Rp 399.000',
+    desc: 'Paket Selamanya',
+    features: [
+      { text: 'Lisensi untuk 6 Perangkat', included: true },
+      { text: 'Kelola 5 toko aktif', included: true },
+      { text: 'Kasir bebas', info: true, infinite: true },
+    ]
+  }
+];
+
+export const getSubscriptionPackages = async (): Promise<SubscriptionPackage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('packages')
+      .eq('id', 'packages')
+      .maybeSingle();
+    if (!error && data?.packages) {
+      localStorage.setItem('cubic_subscription_packages', JSON.stringify(data.packages));
+      return data.packages;
+    }
+  } catch (_) {}
+  
+  const saved = localStorage.getItem('cubic_subscription_packages');
+  if (saved) {
+    try { 
+      const parsed = JSON.parse(saved); 
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
+  }
+  return DEFAULT_PACKAGES;
+};
+
+export const setSubscriptionPackages = async (packages: SubscriptionPackage[]): Promise<void> => {
+  try {
+    await supabase.from('app_config').upsert({ id: 'packages', packages: packages });
+  } catch (_) {}
+  localStorage.setItem('cubic_subscription_packages', JSON.stringify(packages));
+};
+
 export const supabase = client;
 
