@@ -33,6 +33,7 @@ import KalenderView from './views/KalenderView'
 import NotaView from './views/NotaView'
 import OtomatisView from './views/OtomatisView'
 import AdminView from './views/AdminView'
+import KemitraanView from './views/KemitraanView'
 import LicenseScreen from './components/LicenseScreen'
 import { checkAppLicenseStatus, type LicenseStatus } from './lib/license'
 
@@ -319,6 +320,21 @@ const App: React.FC = () => {
   // ── Admin Developer Panel bypass ──
   const currentHash = window.location.hash.replace('#/', '');
   if (currentHash === 'admin' && Capacitor.getPlatform() === 'web') {
+    if (!googleSession) {
+      return <GoogleAuthScreen />
+    }
+    
+    // Validasi email
+    const allowedEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || 'alfaza00001@gmai.com,alfaza00001@gmail.com,elmudzie@gmail.com';
+    const allowedEmails = allowedEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+    const userEmail = googleSession.user.email?.toLowerCase() || '';
+
+    if (!allowedEmails.includes(userEmail)) {
+      alert("Akses Ditolak! Email Anda tidak terdaftar sebagai Admin Server.");
+      window.location.hash = '#/beranda';
+      return null;
+    }
+
     return (
       <AdminView
         active={true}
@@ -488,7 +504,8 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-lisensi': 'lisensi'
+      'view-lisensi': 'lisensi',
+      'view-kemitraan': 'kemitraan'
     }
     const hashToView: Record<string, string> = Object.fromEntries(
       Object.entries(viewToHash).map(([v, h]) => [h, v])
@@ -534,7 +551,8 @@ const MainApp: React.FC<MainAppProps> = ({
       'view-owner-saldo': 'owner-saldo',
       'view-owner-audit': 'owner-audit',
       'view-owner-kategori': 'owner-kategori',
-      'view-lisensi': 'lisensi'
+      'view-lisensi': 'lisensi',
+      'view-kemitraan': 'kemitraan'
     }
     const hash = viewToHash[activeView] || activeView.replace('view-', '')
     if (window.location.hash !== `#/${hash}`) {
@@ -1228,91 +1246,14 @@ const MainApp: React.FC<MainAppProps> = ({
     const todayTxs = relevantTxs.filter(t => t.timestamp.startsWith(todayISO))
     const txsForBalance = continueSaldo ? relevantTxs : todayTxs
     
-    let calcSaldoBank = 0
-    let calcKasModal = 0
-    let calcPenjualan = 0
-    let calcAdminFee = 0
-    let calcTarikTunai = 0
+    const balanceStats = calculateDailyStats(txsForBalance);
+    const todayStats = calculateDailyStats(todayTxs);
 
-    const wallets = getCategories();
-    const walletBalances: Record<string, number> = {};
-    wallets.forEach(w => walletBalances[w] = 0);
-
-    txsForBalance.forEach(tx => {
-      let sumber = tx.sumber_dana ? resolveWalletId(tx.sumber_dana) : null;
-      let tujuan = tx.tujuan_dana ? resolveWalletId(tx.tujuan_dana) : null;
-
-      if (!tx.sumber_dana && !tx.tujuan_dana) {
-        if (tx.kategori === 'Isi Saldo Bank') tujuan = 'Bank01';
-        else if (tx.kategori === 'Isi Modal Tunai Kasir') tujuan = 'Bank08';
-        else if (isDigitalPenjualan(tx.kategori)) { sumber = 'Bank01'; tujuan = 'Bank08'; }
-        else if (tx.kategori === 'Tarik Tunai') { sumber = 'Bank08'; tujuan = 'Bank09'; }
-        else if (tx.kategori === 'Aksesoris') tujuan = 'Bank08';
-      }
-
-      if (sumber && walletBalances[sumber] !== undefined) {
-        walletBalances[sumber] -= tx.nominal;
-      }
-      
-      const isNonTunaiTx = (tx.keterangan || '').includes('[NON_TUNAI]');
-      const adminFee = tx.admin_fee || tx.adminFee || 0;
-
-      if (tujuan && walletBalances[tujuan] !== undefined) {
-        walletBalances[tujuan] += tx.nominal;
-      }
-      
-      if (isNonTunaiTx) {
-        if (walletBalances['Bank09'] !== undefined) {
-          walletBalances['Bank09'] += adminFee;
-        }
-      } else {
-        if (walletBalances['Bank08'] !== undefined) {
-          walletBalances['Bank08'] += adminFee;
-        }
-      }
-    });
-
-    calcKasModal = walletBalances['Bank08'] || 0;
-    
-    // Total Saldo Bank adalah total dompet selain Laci Kasir dan Dompet Penampung (serta Non Tunai legacy)
-    calcSaldoBank = Object.entries(walletBalances)
-      .filter(([name]) => name !== 'Bank08' && name !== 'Bank09')
-      .reduce((sum, [_, bal]) => sum + bal, 0);
-
-    const calcSaldoNonTunai = walletBalances['Bank09'] || 0;
-
-    // Keep today's calculation block for daily sales stats
-    todayTxs.forEach(tx => {
-      const isKhusus = (tx.keterangan || '').includes('[KHUSUS]');
-      const isAksesoris = tx.kategori === 'Aksesoris';
-      const isNonTunai = (tx.keterangan || '').includes('[NON_TUNAI]') || (isAksesoris && (tx.tujuan_dana || '').toUpperCase().includes('PENAMPUNG'));
-      const isAdminDalam = (tx.keterangan || '').includes('[ADMIN_DALAM]');
-      
-      if (isDigitalPenjualan(tx.kategori)) {
-        if (!isKhusus) {
-          calcPenjualan += tx.nominal
-        }
-      }
-
-      if (isAksesoris) {
-        calcPenjualan += tx.nominal
-      }
-
-      if (tx.kategori === 'Tarik Tunai') {
-        calcTarikTunai += tx.nominal
-      }
-
-      // Hitung Admin Fee
-      if (!(isAdminDalam || isNonTunai || isKhusus)) {
-        calcAdminFee += (tx.adminFee || 0)
-      }
-    })
-
-    setSaldoBank(calcSaldoBank)
-    setKasModal(calcKasModal)
-    setSaldoNonTunaiAccumulated(calcSaldoNonTunai)
-    setTotalPenjualan(calcPenjualan)
-    setWalletBalances(walletBalances)
+    setSaldoBank(balanceStats.saldoBank)
+    setKasModal(balanceStats.saldoLaciKasir)
+    setSaldoNonTunaiAccumulated(balanceStats.walletBalances['Bank09'] || 0)
+    setTotalPenjualan(todayStats.penjualanDigital + todayStats.penjualanAksesoris + todayStats.aksesorisNonTunai)
+    setWalletBalances(balanceStats.walletBalances)
   }, [transactions, account?.role, username, filterKasir, pantauStoreId, continueSaldo])
 
   // Fetch Aggregated Report for LaporanView
@@ -1412,6 +1353,8 @@ const MainApp: React.FC<MainAppProps> = ({
   const [formNominal, setFormNominal] = useState('')
   const [formAdmin, setFormAdmin] = useState('')
   const [formKeterangan, setFormKeterangan] = useState('')
+  const [formInputMode, setFormInputMode] = useState<'NOMINAL_ADMIN' | 'MODAL_JUAL'>('NOMINAL_ADMIN')
+  const [adminNonTunai, setAdminNonTunai] = useState(false)
   
   // Isi Saldo State
   const [isiJenis, setIsiJenis] = useState('')
@@ -1662,14 +1605,17 @@ const MainApp: React.FC<MainAppProps> = ({
     let finalNominal = nominal;
     let finalAdmin = admin;
 
-    const catConfigs = getCategoriesConfig();
-    if (catConfigs[formKategori] === 'modal_jual') {
+    if (formInputMode === 'MODAL_JUAL') {
       if (admin <= nominal) {
         setIsSaving(false);
         return showToast('Harga Jual harus lebih besar dari Modal!');
       }
       finalAdmin = admin - nominal;
       finalNominal = nominal;
+    }
+
+    if (adminNonTunai && !finalKeterangan.includes('[NON_TUNAI]')) {
+      finalKeterangan += ' [NON_TUNAI]';
     }
 
     // Proses simpan ke Supabase
@@ -1729,14 +1675,15 @@ const MainApp: React.FC<MainAppProps> = ({
   ) => {
     if (!targetStoreId || targetStoreId === 'all') return;
     const id = Date.now().toString();
-    const keterangan = `[POS] ${items.map(i => `${i.name}(${i.qty})`).join(', ')} | ${paymentMethod}`;
+    const isNonTunai = paymentMethod !== 'Tunai';
+    const keterangan = `[POS] ${items.map(i => `${i.name}(${i.qty})`).join(', ')} | ${paymentMethod}${isNonTunai ? ' [NON_TUNAI]' : ''}`;
     const newTx = {
       id,
       user_id: googleUid,
       kasir_id: username,
       kategori: 'Aksesoris',
       sumber_dana: '',
-      tujuan_dana: 'Bank08',
+      tujuan_dana: isNonTunai ? 'Bank09' : 'Bank08',
       nominal: grandTotal,
       admin_fee: 0,
       keterangan,
@@ -2050,6 +1997,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Filtered Transactions for Dashboard (Today Only)
   const todayTransactions = displayTransactions.filter(t => t.timestamp.startsWith(todayISO))
+  const txsForBalanceView = continueSaldo ? displayTransactions : todayTransactions;
 
   // Derived Calculations (Dashboard - Today Only)
   const todayStats = calculateDailyStats(todayTransactions);
@@ -2064,9 +2012,7 @@ const MainApp: React.FC<MainAppProps> = ({
     saldoReal: totalSaldoReal,
     totalKhusus,
     totalNonTunai,
-    kasModal: todayKasModal,
-    saldoLaciKasir: totalSaldoKas,
-    saldoBank: totalSaldoBank
+    kasModal: todayKasModal
   } = todayStats;
   const kasLainnya = totalKhusus + totalNonTunai;
 
@@ -2169,7 +2115,7 @@ const MainApp: React.FC<MainAppProps> = ({
                           </div>
                           <div className="min-w-0">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Saldo Bank</p>
-                            <p className="text-sm font-black text-slate-800 dark:text-white truncate mt-0.5" title={formatRupiah(totalSaldoBank)}>{formatRupiah(totalSaldoBank).replace(',00', '')}</p>
+                            <p className="text-sm font-black text-slate-800 dark:text-white truncate mt-0.5" title={formatRupiah(saldoBank)}>{formatRupiah(saldoBank).replace(',00', '')}</p>
                           </div>
                         </div>
                         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700/50 flex items-center gap-3">
@@ -2178,7 +2124,7 @@ const MainApp: React.FC<MainAppProps> = ({
                           </div>
                           <div className="min-w-0">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Saldo Laci Kasir</p>
-                            <p className="text-sm font-black text-slate-800 dark:text-white truncate mt-0.5" title={formatRupiah(totalSaldoKas)}>{formatRupiah(totalSaldoKas).replace(',00', '')}</p>
+                            <p className="text-sm font-black text-slate-800 dark:text-white truncate mt-0.5" title={formatRupiah(kasModal)}>{formatRupiah(kasModal).replace(',00', '')}</p>
                           </div>
                         </div>
                         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700/50 flex items-center gap-3">
@@ -2226,6 +2172,8 @@ const MainApp: React.FC<MainAppProps> = ({
                               nominal={formNominal} setNominal={setFormNominal}
                               admin={formAdmin} setAdmin={setFormAdmin}
                               keterangan={formKeterangan} setKeterangan={setFormKeterangan}
+                              inputMode={formInputMode} setInputMode={setFormInputMode}
+                              adminNonTunai={adminNonTunai} setAdminNonTunai={setAdminNonTunai}
                               onSave={handleSimpanTransaksi} isSaving={isSaving} presets={presets}
                             />
                           </div>
@@ -2356,7 +2304,7 @@ const MainApp: React.FC<MainAppProps> = ({
                       isPc={screenSize === 'pc'}
                       setActiveView={setActiveView}
                       showToast={showToast}
-                      transactions={displayTransactions}
+                      transactions={txsForBalanceView}
                       handleCreateCustomTransaction={handleCreateCustomTransaction}
                       storeName={storeName}
                       storeSubtext={storeSubtext}
@@ -2440,6 +2388,10 @@ const MainApp: React.FC<MainAppProps> = ({
                       setFormAdmin={setFormAdmin}
                       formKeterangan={formKeterangan}
                       setFormKeterangan={setFormKeterangan}
+                      formInputMode={formInputMode}
+                      setFormInputMode={setFormInputMode}
+                      adminNonTunai={adminNonTunai}
+                      setAdminNonTunai={setAdminNonTunai}
                       handleSimpanTransaksi={handleSimpanTransaksi}
                       transactions={todayTransactions}
                       allTransactions={displayTransactions}
@@ -2448,7 +2400,7 @@ const MainApp: React.FC<MainAppProps> = ({
                       totalVolume={totalVolume}
                       totalAksesoris={totalAksesoris}
                       totalTarik={totalTarik}
-                      totalSaldoKas={totalSaldoKas}
+                      totalSaldoKas={kasModal}
                       penjualanDigital={penjualanDigital}
                       kasModal={todayKasModal}
                       kasirName={account.name}
@@ -2510,6 +2462,10 @@ const MainApp: React.FC<MainAppProps> = ({
             setFormAdmin={setFormAdmin}
             formKeterangan={formKeterangan}
             setFormKeterangan={setFormKeterangan}
+            formInputMode={formInputMode}
+            setFormInputMode={setFormInputMode}
+            adminNonTunai={adminNonTunai}
+            setAdminNonTunai={setAdminNonTunai}
             handleSimpanTransaksi={handleSimpanTransaksi}
             transactions={todayTransactions}
             allTransactions={displayTransactions}
@@ -2518,7 +2474,7 @@ const MainApp: React.FC<MainAppProps> = ({
             totalVolume={totalVolume}
             totalAksesoris={totalAksesoris}
             totalTarik={totalTarik}
-            totalSaldoKas={totalSaldoKas}
+            totalSaldoKas={kasModal}
             penjualanDigital={penjualanDigital}
             kasModal={todayKasModal}
             kasirName={account.name}
@@ -2601,7 +2557,7 @@ const MainApp: React.FC<MainAppProps> = ({
             totalAdmin={dailyReport ? dailyReport.totalAdmin : totalAdmin}
             totalAksesoris={dailyReport ? dailyReport.totalAksesoris : totalAksesoris}
             totalVolume={totalVolume}
-            totalSaldoKas={dailyReport ? dailyReport.totalSaldoKas : totalSaldoKas}
+            totalSaldoKas={dailyReport ? dailyReport.totalSaldoKas : kasModal}
             penjualanDigital={dailyReport ? dailyReport.penjualanDigital : penjualanDigital}
             kasModal={dailyReport ? dailyReport.kasModal : todayKasModal}
             kasLainnya={dailyReport ? dailyReport.kasLainnya : kasLainnya}
@@ -2714,6 +2670,16 @@ const MainApp: React.FC<MainAppProps> = ({
               onBack={() => setActiveView('view-beranda')}
             />
           )}
+
+          <KemitraanView
+            active={activeView === 'view-kemitraan'}
+            setActiveView={setActiveView}
+            isPc={screenSize !== 'tablet'}
+            storeName={storeName}
+            cashierName={account.name}
+            storeAddress={storeAddress}
+            autoTextPresets={presets}
+          />
 
           {!(activeRole === 'owner' && !pantauStoreId) && (
             <Navigation activeView={activeView} setActiveView={setActiveView} />

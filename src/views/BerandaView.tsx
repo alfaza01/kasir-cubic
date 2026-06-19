@@ -31,6 +31,10 @@ interface BerandaViewProps {
   setFormAdmin: (v: string) => void
   formKeterangan: string
   setFormKeterangan: (v: string) => void
+  formInputMode: 'NOMINAL_ADMIN' | 'MODAL_JUAL'
+  setFormInputMode: (v: 'NOMINAL_ADMIN' | 'MODAL_JUAL') => void
+  adminNonTunai: boolean
+  setAdminNonTunai: (v: boolean) => void
   handleSimpanTransaksi: () => void
   transactions: Transaction[]
   isSaving: boolean
@@ -1406,6 +1410,7 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
               { id: 'view-owner-backup', title: 'Backup', desc: 'Backup & reset', icon: 'fa-database', color: 'bg-red-600' },
               { id: 'view-owner-catatan', title: 'Catatan', desc: 'Catatan penting', icon: 'fa-clipboard', color: 'bg-yellow-600' },
               { id: 'view-owner-keamanan', title: 'Keamanan', desc: 'Pengaturan PIN', icon: 'fa-shield-halved', color: 'bg-slate-700' },
+              { id: 'view-kemitraan', title: 'Kemitraan', desc: 'Sistem Referral', icon: 'fa-handshake', color: 'bg-rose-500' },
               { id: 'view-akun', title: 'Setting', desc: 'Identitas & App', icon: 'fa-gear', color: 'bg-slate-600' }
             ].map((item) => (
               <button 
@@ -2834,6 +2839,10 @@ const BerandaView: React.FC<BerandaViewProps> = (props) => {
             setAdmin={props.setFormAdmin}
             keterangan={props.formKeterangan}
             setKeterangan={props.setFormKeterangan}
+            inputMode={props.formInputMode}
+            setInputMode={props.setFormInputMode}
+            adminNonTunai={props.adminNonTunai}
+            setAdminNonTunai={props.setAdminNonTunai}
             onSave={props.handleSimpanTransaksi}
             presets={props.presets}
           />

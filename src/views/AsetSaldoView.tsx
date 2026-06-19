@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { formatRupiah, formatInputRupiah, cn, getCategories, getCategoriesConfig, getLocalDateString, getWallets, getWalletName, resolveWalletId, isDigitalPenjualan } from '../lib/utils'
+import { formatRupiah, formatInputRupiah, cn, getCategories, getCategoriesConfig, getLocalDateString, getWallets, getWalletName, resolveWalletId, isDigitalPenjualan, calculateDailyStats } from '../lib/utils'
 import type { Transaction, WalletNode } from '../types'
 import { getKasirAccounts, type KasirAccount } from '../components/LoginScreen'
 import { CubaLogo } from '../components/CubaLogo'
@@ -51,65 +51,17 @@ const AsetSaldoView: React.FC<AturSaldoViewProps> = (props) => {
   const clockStr = currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   // Calculate Cumulative Balances
+  const stats = calculateDailyStats(props.transactions);
   const walletBalances: Record<string, number> = {};
-  wallets.forEach(w => walletBalances[w] = 0);
-
-  props.transactions.forEach(tx => {
-    let sumber = tx.sumber_dana ? resolveWalletId(tx.sumber_dana) : null;
-    let tujuan = tx.tujuan_dana ? resolveWalletId(tx.tujuan_dana) : null;
-
-    if (!tx.sumber_dana && !tx.tujuan_dana) {
-      if (tx.kategori === 'Isi Saldo Bank') tujuan = 'Bank01';
-      else if (tx.kategori === 'Isi Modal Tunai Kasir') tujuan = 'Bank08';
-      else if (isDigitalPenjualan(tx.kategori)) { sumber = 'Bank01'; tujuan = 'Bank08'; }
-      else if (tx.kategori === 'Tarik Tunai') { sumber = 'Bank08'; tujuan = 'Bank09'; }
-      else if (tx.kategori === 'Aksesoris') tujuan = 'Bank08';
-    }
-
-    if (sumber) {
-      if (walletBalances[sumber] !== undefined) {
-        walletBalances[sumber] -= tx.nominal;
-      }
-    }
-    
-    const ket = (tx.keterangan || '').toUpperCase();
-    const isAksesorisTx = tx.kategori === 'Aksesoris';
-    const isNonTunaiTx = ket.includes('[NON_TUNAI]') || (isAksesorisTx && (tx.tujuan_dana || '').toUpperCase().includes('PENAMPUNG'));
-    const adminFee = tx.admin_fee || tx.adminFee || 0;
-
-    if (tujuan) {
-      if (walletBalances[tujuan] !== undefined) {
-        walletBalances[tujuan] += tx.nominal;
-      }
-    }
-    
-    if (isNonTunaiTx) {
-      if (walletBalances['Bank09'] !== undefined) {
-        walletBalances['Bank09'] += adminFee;
-      }
-    } else {
-      if (walletBalances['Bank08'] !== undefined) {
-        walletBalances['Bank08'] += adminFee;
-      }
-    }
-  });
+  wallets.forEach(w => walletBalances[w] = stats.walletBalances[w] || 0);
 
   const totalBalance = Object.values(walletBalances).reduce((a, b) => a + b, 0);
 
   // Calculate cumulative real balance for each wallet
   const walletRealBalances: Record<string, number> = {};
-  props.transactions.forEach(t => {
-    const katLower = t.kategori.toLowerCase();
-    if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
-      const appName = (t.keterangan || '').trim().toUpperCase();
-      if (appName) {
-        walletRealBalances[appName] = (walletRealBalances[appName] || 0) + t.nominal;
-      }
-    }
-  });
   wallets.forEach(w => {
     const wNameUpper = getWalletName(w, walletsFull).trim().toUpperCase();
-    walletRealBalances[w] = walletRealBalances[wNameUpper] || 0;
+    walletRealBalances[w] = stats.walletRealBalances[wNameUpper] || 0;
   });
 
   const getIconForWallet = (name: string) => {

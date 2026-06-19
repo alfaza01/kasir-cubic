@@ -188,6 +188,8 @@ export interface DailyStats {
   saldoBank: number;
   saldoReal: number;
   bankOut: number;
+  walletBalances: Record<string, number>;
+  walletRealBalances: Record<string, number>;
 }
 
 export const calculateDailyStats = (txs: any[]): DailyStats => {
@@ -213,6 +215,7 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
   let saldoLaciKasir = 0;
   const walletBalances: Record<string, number> = {};
   const saldoRealMap: Record<string, number> = {};
+  const walletRealBalances: Record<string, number> = {};
 
   txs.forEach(t => {
     // Basic volume and transaction counts for purely informative stats
@@ -236,6 +239,11 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     if (t.kategori === 'Isi Saldo Real Aplikasi' || katLower === 'saldo real aplikasi') {
       const appName = ket || 'UNKNOWN';
       saldoRealMap[appName] = (saldoRealMap[appName] || 0) + t.nominal;
+      // also put it in walletRealBalances using the appName exactly like AsetSaldoView does
+      const cleanAppName = appName.trim().toUpperCase();
+      if (cleanAppName) {
+        walletRealBalances[cleanAppName] = (walletRealBalances[cleanAppName] || 0) + t.nominal;
+      }
     }
     
     let sumber = t.sumber_dana ? resolveWalletId(t.sumber_dana) : null;
@@ -352,7 +360,9 @@ export const calculateDailyStats = (txs: any[]): DailyStats => {
     saldoLaciKasir,
     saldoBank,
     saldoReal,
-    bankOut
+    bankOut,
+    walletBalances,
+    walletRealBalances: walletRealBalances
   };
 };
 
@@ -405,28 +415,78 @@ export const printReceiptToRawBT = (
   change: number,
   tanggal: string
 ) => {
-  let text = "";
-  
-  text += "[C]<b>" + (storeName || "NAMA TOKO") + "</b>\n";
-  if (storeAddress) text += "[C]" + storeAddress + "\n";
-  text += "[C]--------------------------------\n";
-  text += "[L]Tgl: " + tanggal + "\n";
-  if (kasirName) text += "[L]Ksr: " + kasirName + "\n";
-  if (transactionId) text += "[L]Trx: " + transactionId + "\n";
-  text += "[C]--------------------------------\n";
-  
-  items.forEach(it => {
-    text += "[L]" + it.name + "\n";
-    text += "[L]" + it.qty + "x " + formatRupiah(it.price).replace('Rp', '') + " [R]" + formatRupiah(it.qty * it.price).replace('Rp', '') + "\n";
-  });
-  
-  text += "[C]--------------------------------\n";
-  text += "[L]<b>TOTAL</b> [R]<b>" + formatRupiah(grandTotal) + "</b>\n";
-  if (paid > 0) text += "[L]TUNAI [R]" + formatRupiah(paid) + "\n";
-  if (change > 0) text += "[L]KEMBALI [R]" + formatRupiah(change) + "\n";
-  text += "[C]--------------------------------\n";
-  text += "[C]Terima Kasih\n\n\n";
+  const isNative = !!(window as any).bluetoothSerial;
+  const macAddress = localStorage.getItem('bluetooth_printer_mac');
 
-  const intentUrl = "intent:" + encodeURIComponent(text) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-  window.location.href = intentUrl;
+  if (isNative && macAddress) {
+    // NATIVE BLUETOOTH PRINTER LOGIC (ESC/POS Plain text with 32 char limit)
+    const MAX_CHAR = 32;
+    const centerText = (text: string) => {
+      const trimmed = text.substring(0, MAX_CHAR);
+      const spaces = Math.max(0, Math.floor((MAX_CHAR - trimmed.length) / 2));
+      return ' '.repeat(spaces) + trimmed + '\n';
+    };
+    
+    const leftRightText = (left: string, right: string) => {
+      const spaceLen = Math.max(0, MAX_CHAR - left.length - right.length);
+      return left + ' '.repeat(spaceLen) + right + '\n';
+    };
+
+    let text = "";
+    text += "\n";
+    text += centerText(storeName || "NAMA TOKO");
+    if (storeAddress) text += centerText(storeAddress);
+    text += "-".repeat(MAX_CHAR) + "\n";
+    text += leftRightText("Tgl: " + tanggal, "");
+    if (kasirName) text += leftRightText("Ksr: " + kasirName, "");
+    if (transactionId) text += leftRightText("Trx: " + transactionId, "");
+    text += "-".repeat(MAX_CHAR) + "\n";
+    
+    items.forEach(it => {
+      const name = it.name.length > MAX_CHAR ? it.name.substring(0, MAX_CHAR) : it.name;
+      text += name + "\n";
+      const left = `${it.qty}x ${formatRupiah(it.price).replace('Rp', '')}`;
+      const right = formatRupiah(it.qty * it.price).replace('Rp', '');
+      text += leftRightText(left, right);
+    });
+    
+    text += "-".repeat(MAX_CHAR) + "\n";
+    text += leftRightText("TOTAL", formatRupiah(grandTotal));
+    if (paid > 0) text += leftRightText("TUNAI", formatRupiah(paid));
+    if (change > 0) text += leftRightText("KEMBALI", formatRupiah(change));
+    text += "-".repeat(MAX_CHAR) + "\n";
+    text += centerText("Terima Kasih");
+    text += "\n\n\n";
+
+    (window as any).bluetoothSerial.write(
+      text,
+      () => console.log('Print success'),
+      (err: any) => alert('Print error: ' + err)
+    );
+  } else {
+    // PWA RAWBT INTENT LOGIC
+    let text = "";
+    text += "[C]<b>" + (storeName || "NAMA TOKO") + "</b>\n";
+    if (storeAddress) text += "[C]" + storeAddress + "\n";
+    text += "[C]--------------------------------\n";
+    text += "[L]Tgl: " + tanggal + "\n";
+    if (kasirName) text += "[L]Ksr: " + kasirName + "\n";
+    if (transactionId) text += "[L]Trx: " + transactionId + "\n";
+    text += "[C]--------------------------------\n";
+    
+    items.forEach(it => {
+      text += "[L]" + it.name + "\n";
+      text += "[L]" + it.qty + "x " + formatRupiah(it.price).replace('Rp', '') + " [R]" + formatRupiah(it.qty * it.price).replace('Rp', '') + "\n";
+    });
+    
+    text += "[C]--------------------------------\n";
+    text += "[L]<b>TOTAL</b> [R]<b>" + formatRupiah(grandTotal) + "</b>\n";
+    if (paid > 0) text += "[L]TUNAI [R]" + formatRupiah(paid) + "\n";
+    if (change > 0) text += "[L]KEMBALI [R]" + formatRupiah(change) + "\n";
+    text += "[C]--------------------------------\n";
+    text += "[C]Terima Kasih\n\n\n";
+
+    const intentUrl = "intent:" + encodeURIComponent(text) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+    window.location.href = intentUrl;
+  }
 };

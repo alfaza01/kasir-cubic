@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { User, CloudLightning, MessageSquare, KeyRound, Save, RefreshCw, LogOut, Sliders, ChevronDown, ChevronRight, HelpCircle, CheckSquare, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { User, CloudLightning, MessageSquare, KeyRound, Save, RefreshCw, LogOut, Sliders, ChevronDown, ChevronRight, HelpCircle, CheckSquare, Eye, EyeOff, ShieldCheck, Printer } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 interface AkunViewProps {
@@ -56,6 +56,69 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section)
   }
+
+  // States for Native Bluetooth via Capacitor
+  const [btConnected, setBtConnected] = useState(false)
+  const [btConnecting, setBtConnecting] = useState(false)
+  const [pairedDevices, setPairedDevices] = useState<any[]>([])
+  const [btMacAddress, setBtMacAddress] = useState<string | null>(localStorage.getItem('bluetooth_printer_mac'))
+  const [isScanningBt, setIsScanningBt] = useState(false)
+
+  // Periksa koneksi awal jika ada MAC address tersimpan
+  React.useEffect(() => {
+    if (btMacAddress && (window as any).bluetoothSerial) {
+      (window as any).bluetoothSerial.isConnected(
+        () => setBtConnected(true),
+        () => setBtConnected(false)
+      )
+    }
+  }, [btMacAddress])
+
+  const scanBluetoothDevices = () => {
+    if (!(window as any).bluetoothSerial) {
+      alert('Bluetooth tidak tersedia di perangkat/browser ini. Gunakan aplikasi Android native.');
+      return;
+    }
+    setIsScanningBt(true);
+    (window as any).bluetoothSerial.list(
+      (devices: any[]) => {
+        setPairedDevices(devices);
+        setIsScanningBt(false);
+      },
+      (error: any) => {
+        alert('Gagal mengambil daftar Bluetooth: ' + error);
+        setIsScanningBt(false);
+      }
+    );
+  };
+
+  const connectToBluetooth = (macAddress: string) => {
+    setBtConnecting(true);
+    (window as any).bluetoothSerial.connect(
+      macAddress,
+      () => {
+        setBtConnected(true);
+        setBtConnecting(false);
+        setBtMacAddress(macAddress);
+        localStorage.setItem('bluetooth_printer_mac', macAddress);
+        alert('Printer berhasil terhubung!');
+      },
+      (error: any) => {
+        setBtConnected(false);
+        setBtConnecting(false);
+        alert('Gagal terhubung ke printer: ' + error);
+      }
+    );
+  };
+
+  const disconnectBluetooth = () => {
+    if (!(window as any).bluetoothSerial) return;
+    (window as any).bluetoothSerial.disconnect(() => {
+      setBtConnected(false);
+      setBtMacAddress(null);
+      localStorage.removeItem('bluetooth_printer_mac');
+    });
+  };
 
   const [ownerPinEnabled, setOwnerPinEnabled] = useState(() => localStorage.getItem('alphaPro_owner_pin_enabled') !== 'false')
   const [ownerMasterPin, setOwnerMasterPin] = useState(() => localStorage.getItem('alphaPro_owner_pin') || '0000')
@@ -373,6 +436,86 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
             </AnimatePresence>
           </div>
 
+          {/* PRINTER BLUETOOTH NATIVE */}
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <button 
+              onClick={() => toggleSection('printer')}
+              className="w-full flex items-center justify-between p-4 text-left active:bg-slate-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center shrink-0">
+                  <Printer size={18} fill="currentColor" className="text-slate-300" />
+                </div>
+                <div>
+                  <span className="font-black text-xs text-slate-800 uppercase tracking-widest block">KONEKSI PRINTER POS</span>
+                  <span className="text-[9px] font-bold text-slate-400 mt-0.5 block">Konfigurasi hardware thermal Bluetooth</span>
+                </div>
+              </div>
+              {openSection === 'printer' ? <ChevronDown size={20} className="text-slate-400 shrink-0" /> : <ChevronRight size={20} className="text-slate-400 shrink-0" />}
+            </button>
+            <AnimatePresence>
+              {openSection === 'printer' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-t border-slate-100"
+                >
+                  <div className="p-5 space-y-4 bg-slate-50">
+                    <div className="flex flex-col gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
+                       <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2.5">
+                             <div className={`w-3 h-3 rounded-full animate-pulse ${btConnected ? 'bg-emerald-500' : btConnecting ? 'bg-amber-400' : 'bg-red-500'}`}></div>
+                             <div>
+                                <p className="text-[11px] font-extrabold text-slate-800 uppercase">PRINTER BLUETOOTH NATIVE</p>
+                                <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">
+                                  STATUS: {btConnected ? `TERHUBUNG (${btMacAddress})` : btConnecting ? 'MENYAMBUNGKAN...' : 'DISCONNECTED'}
+                                </p>
+                             </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={btConnected ? disconnectBluetooth : scanBluetoothDevices}
+                            disabled={btConnecting || isScanningBt}
+                            className={`text-[9px] font-black px-3 py-1.5 rounded-lg active:scale-95 transition-all shadow-sm cursor-pointer
+                              ${btConnected 
+                                ? 'bg-rose-50 border border-rose-200 text-rose-600 font-bold' 
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }
+                            `}
+                          >
+                             {btConnected ? 'PUTUSKAN' : isScanningBt ? 'MENCARI...' : 'CARI PRINTER'}
+                          </button>
+                       </div>
+                       
+                       {!btConnected && pairedDevices.length > 0 && (
+                         <div className="mt-2 border-t border-slate-200 pt-2">
+                           <p className="text-[9px] font-bold text-slate-500 mb-2">PILIH PRINTER YANG TERSEDIA:</p>
+                           <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                             {pairedDevices.map((device) => (
+                               <button
+                                 key={device.address}
+                                 onClick={() => connectToBluetooth(device.address)}
+                                 disabled={btConnecting}
+                                 className="w-full flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-400 active:bg-blue-50 transition-colors text-left"
+                               >
+                                 <div>
+                                   <p className="text-[10px] font-bold text-slate-800">{device.name || 'Unknown Device'}</p>
+                                   <p className="text-[8px] font-mono text-slate-400">{device.address}</p>
+                                 </div>
+                                 <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">HUBUNGKAN</span>
+                               </button>
+                             ))}
+                           </div>
+                         </div>
+                       )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* TEKS OTOMATIS */}
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <button 
@@ -391,6 +534,8 @@ const AkunView: React.FC<AkunViewProps> = (props) => {
               <ChevronRight size={20} className="text-slate-400 shrink-0" />
             </button>
           </div>
+
+
 
 
 
